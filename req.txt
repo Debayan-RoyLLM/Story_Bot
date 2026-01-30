@@ -1,0 +1,39 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+
+
+SELECT AVG(r.score) AS average_runs
+FROM history2.fixtures__runs r
+INNER JOIN history2.fixtures__balls b ON r.fixture_id = b.fixture_id
+WHERE r.inning = 2
+AND r.score < 106
+AND b.ball > (SELECT MAX(ball) FROM history2.fixtures__balls WHERE fixture_id = b.fixture_id) - 60
+
+
+
+SELECT COUNT(*)
+FROM history2.fixtures__runs r
+WHERE r.inning = 2
+AND r.wickets = 8
+AND r.score > 0
+AND r.fixture_id IN (
+    SELECT fixture_id
+    FROM history2.fixtures__balls
+    WHERE scoreboard = 'S2' -- Chasing Team
+    AND DATEDIFF(YEAR, CONVERT(DATE, '2023-10-01'), CONVERT(DATE, '2013-10-01')) <= 10
+)
+
+SELECT COUNT(*)
+FROM history2.fixtures__batting
+WHERE score >= 50
+AND ball <= 20;
+
+SELECT COUNT(*)
+FROM history2.fixtures__balls AS b
+INNER JOIN history2.fixtures__runs AS r ON b.fixture_id = r.fixture_id
+WHERE r.inning = 2 AND r.score <= 20 AND b.score__is_wicket = 1
+
+
+SELECT AVG(score) FROM history2.fixtures__runs WHERE inning = 1 AND fixture_id IN (SELECT fixture_id FROM history2.fixtures__balls WHERE scoreboard = 'S2')

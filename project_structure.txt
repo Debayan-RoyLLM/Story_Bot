@@ -1,0 +1,328 @@
+================================================================================
+              PROJECT STRUCTURE — AI Story Bot
+================================================================================
+
+Project_AI_Story_Bot/
+│
+├── app/
+│   ├── main.py
+│   ├── db/
+│   │   └── database.py
+│   ├── Queries/
+│   │   └── fixture_queries.py
+│   ├── functions/
+│   │   └── fixtures_functions.py
+│   └── services/
+│       ├── __init__.py
+│       ├── LLM.py
+│       ├── validators.py
+│       ├── fixtures_services.py
+│       └── config/
+│           ├── settings.py
+│           ├── metadata.json
+│           └── prompt_template.txt
+│
+├── models/
+│   ├── logistic_model.joblib
+│   ├── forrest_model.joblib
+│   ├── xgb_model.joblib
+│   └── SVC_model.joblib
+│
+├── data/
+│   ├── llm_outputs.csv
+│   └── analysis_report.txt
+│
+├── pca_model_59.pkl
+└── req.txt
+
+
+================================================================================
+FILE DESCRIPTIONS
+================================================================================
+
+------------------------------------------------------------------------------
+app/main.py
+------------------------------------------------------------------------------
+  Application entry point. Creates the FastAPI app instance and registers
+  the router from fixtures_services.py. Minimal setup — no domain logic.
+
+------------------------------------------------------------------------------
+app/db/database.py
+------------------------------------------------------------------------------
+  Database connection layer. Configures SQLAlchemy to connect to the SQL
+  Server database. Provides a SessionLocal factory and a get_db()
+  dependency for injecting database sessions into route handlers.
+
+------------------------------------------------------------------------------
+app/Queries/fixture_queries.py
+------------------------------------------------------------------------------
+  Raw SQL query templates stored as Python strings. Contains ~7 queries:
+    - Latest fixture ID lookup
+    - Ball-by-ball info (batsman, bowler, runs, team)
+    - Player name lookup by ID
+    - Team name and ID lookup
+    - Batting stats (runs scored, balls faced)
+    - Bowling stats (overs bowled, wickets taken)
+    - Wicket count queries
+
+------------------------------------------------------------------------------
+app/functions/fixtures_functions.py
+------------------------------------------------------------------------------
+  Database query execution functions. Each function runs one SQL template
+  from fixture_queries.py and extracts specific values. Key functions:
+    - get_latest_fixture()       — finds the most recent match
+    - get_info()                 — gets current ball data
+    - get_player2_name()         — gets non-striker batsman name
+    - second_team_name()         — gets opposing team name
+    - get_current_run()          — calculates team total score
+    - get_bowling_team_id()      — retrieves the bowling team's ID
+    - bowling_team_total()       — gets first innings target score
+    - get_current_player_run()   — batsman runs, balls faced, strike rate
+    - get_bowler_wickets()       — wickets taken by current bowler
+    - get_team_wickets()         — total team wickets fallen
+    - get_last_two_balls()       — scores from the last two deliveries
+
+------------------------------------------------------------------------------
+app/services/fixtures_services.py
+------------------------------------------------------------------------------
+  Main orchestration endpoint. Defines GET /fixtures/latest which:
+    1. Iterates through all 120 balls of a T20 match
+    2. Calculates live game state (runs required, run rate, wickets)
+    3. Builds a narrative string describing the current match situation
+    4. Every 5 balls, calls the LLM pipeline to generate questions,
+       SQL queries, and natural language answers
+    5. Writes all results to CSV
+
+------------------------------------------------------------------------------
+app/services/LLM.py
+------------------------------------------------------------------------------
+  LLM-powered SQL generation engine (~782 lines). Implements:
+    - CHASE-SQL strategy: generates multiple candidate queries via
+      different reasoning paths, scores them, and picks the best one
+    - Question generation: GPT-4o-mini generates 8 statistical questions
+    - Question classification: BERT embeddings + ML models filter
+      relevant questions from irrelevant ones
+    - SQL generation: converts natural language questions to T-SQL
+    - Query execution: runs generated SQL against the database
+    - Answer generation: converts raw query results into natural
+      language answers
+    - LangGraph workflow: chains all steps into a stateful graph pipeline
+
+
+================================================================================
+DETAILED: settings.py
+================================================================================
+
+File: app/services/config/settings.py
+
+  Centralized configuration module containing 7 configuration classes:
+
+  1. DatabaseConfig
+     ─────────────
+     Database connection settings.
+     - USERNAME = "SA"
+     - SERVER = "localhost"
+     - DATABASE = "sportmonk"
+     - DRIVER = "ODBC Driver 18 for SQL Server"
+     - DIALECT = "mssql"
+     - get_connection_string(password) — builds the full SQLAlchemy URI
+
+  2. MLModelConfig
+     ─────────────
+     Machine learning model settings.
+     - BERT_MODEL_NAME = 'bert-base-uncased'
+     - BERT_MAX_LENGTH = 128
+     - PCA_DIMENSIONS = 59
+     - Paths to all model files:
+         pca_model_59.pkl
+         logistic_model.joblib
+         forrest_model.joblib
+         xgb_model.joblib
+         SVC_model.joblib
+
+  3. QueryConfig
+     ───────────
+     SQL query execution settings.
+     - MAX_QUERY_TIMEOUT = 30 seconds
+     - MAX_RESULTS_DISPLAY = 10 rows
+     - DEFAULT_LLM_MODEL = "gpt-4o-mini"
+     - CHASE_REASONING_PATHS — 4 strategies for multi-path SQL generation:
+         a) "event_first"       — start from ball events, filter early
+         b) "aggregation_first" — determine aggregation, then find tables
+         c) "player_first"      — focus on player, derive match constraints
+         d) "chase_context"     — assume chase scenario (scoreboard S2, inning 2)
+
+  4. StatementConfig
+     ───────────────
+     Question generation and classification settings.
+     - REQUIRED_VALID_STATEMENTS = 8
+     - RANDOM_FOREST_THRESHOLD = 0.5
+     - GAME_STATE_KEYS — 11 keys fed into ML models alongside BERT
+       embeddings:
+         req_runs, balls_remaining, batsman_total_runs,
+         batsman_balls_faced, nonstriker_total_runs,
+         nonstriker_balls_faced, team_run_rate, req_run_rate,
+         wickets, second_last_ball, last_ball
+
+  5. FileConfig
+     ──────────
+     Paths to config files.
+     - METADATA_FILE      → config/metadata.json
+     - PROMPT_TEMPLATE_FILE → config/prompt_template.txt
+
+  6. APIConfig
+     ─────────
+     External service credentials (reads from environment or prompts).
+     - get_openai_api_key()    — OpenAI API key
+     - get_sql_password()      — SQL Server password
+     - get_langsmith_api_key() — LangSmith tracing key
+
+  7. Config (main class)
+     ───────────────────
+     Aggregates all above classes into a single access point:
+       Config.db, Config.ml, Config.query, Config.statement,
+       Config.files, Config.api
+
+
+================================================================================
+DETAILED: validators.py
+================================================================================
+
+File: app/services/validators.py
+
+  14-point SQL validation system. Each check is a separate function
+  returning (is_valid: bool, error_or_warnings).
+
+  CHECK  1: validate_subquery_safety
+           Ensures subqueries used with scalar operators (=, >, <) have
+           TOP 1 or an aggregate function (AVG/MAX/MIN/SUM/COUNT).
+           Prevents "subquery returned more than 1 value" runtime errors.
+
+  CHECK  2: validate_column_names
+           Validates column names against metadata. Catches:
+           - Forbidden columns: SCORE, RUNS, RATE, INNING, OVER,
+             SCOREBOARD_NAME, TEAM_NAME, VENUE, SEASON, DATE,
+             PLAYER_NAME, MATCH_ID — each with a suggested replacement.
+           - Column-table mismatches (e.g., .score in fixtures__balls
+             should be score__runs).
+           - Unknown tables in FROM clauses.
+
+  CHECK  3: validate_order_by_rules
+           Warns when ORDER BY is used with DISTINCT without ensuring
+           the ORDER BY column is in SELECT or using WITH TIES.
+
+  CHECK  4: validate_aggregate_rules
+           Blocks SUM() or AVG() on bit columns (e.g., score__is_wicket).
+           Suggests COUNT(CASE WHEN ...) or AVG(CAST(...)) instead.
+
+  CHECK  5: validate_data_types
+           Warns about division without NULLIF (divide-by-zero risk)
+           and integer division on score__runs without CAST.
+
+  CHECK  6: validate_primary_table
+           Ensures the query references at least one primary table:
+           history2.fixtures__balls or history2.fixtures__runs.
+
+  CHECK  7: validate_join_syntax
+           Checks that every JOIN has a corresponding ON clause.
+
+  CHECK  8: validate_where_clause
+           Warns if a non-aggregate query has no WHERE clause
+           (full table scan risk).
+
+  CHECK  9: validate_group_by
+           Validates that all non-aggregated columns in SELECT appear
+           in the GROUP BY clause (SQL Server strict mode).
+
+  CHECK 10: validate_cte_order_by
+           Ensures ORDER BY inside a CTE body is accompanied by TOP,
+           OFFSET, or FOR XML (T-SQL requirement).
+
+  CHECK 11: validate_top_offset_conflict
+           Blocks using TOP and OFFSET in the same SELECT statement.
+           Suggests OFFSET...FETCH NEXT instead.
+
+  CHECK 12: validate_fetch_syntax
+           Validates FETCH requires OFFSET, and FETCH NEXT ends with
+           ROWS ONLY.
+
+  CHECK 13: validate_column_table_mismatch
+           The most detailed check. Validates columns against their
+           specific tables:
+           - fixtures__bowling: blocks bowler__fullname, batsman__fullname,
+             score__runs, ball (wrong table)
+           - fixtures__batting: blocks batsman__fullname, score__runs
+             (use score), overs (use ball)
+           - fixtures__runs: blocks player names, score__runs (use score),
+             ball (use overs)
+           - fixtures__balls: blocks overs (use ball), runs (use
+             score__runs), player_id (use batsman_id)
+
+  CHECK 14: validate_unqualified_columns
+           Warns about ambiguous column names in JOIN queries that
+           aren't qualified with a table alias. Checks: score, overs,
+           wickets, fixture_id, team_id, ball.
+
+  ORCHESTRATOR: validate_generated_query(query, metadata, question)
+           Runs all 14 checks in sequence. Stops on the first hard
+           failure (returns False + error). Collects all warnings from
+           passing checks. Returns (is_valid, message, warnings_list).
+
+
+================================================================================
+REMAINING FILES
+================================================================================
+
+------------------------------------------------------------------------------
+app/services/config/metadata.json
+------------------------------------------------------------------------------
+  Database schema documentation in JSON format. Lists every table and
+  its columns with descriptions. Used by the LLM to understand the
+  database structure when generating SQL queries.
+
+------------------------------------------------------------------------------
+app/services/config/prompt_template.txt
+------------------------------------------------------------------------------
+  System prompt sent to the LLM for SQL generation (~342 lines).
+  Contains table documentation, column usage rules, common pitfalls,
+  forbidden patterns, and example queries.
+
+------------------------------------------------------------------------------
+models/ (*.joblib files)
+------------------------------------------------------------------------------
+  Pre-trained ML models for classifying whether a generated question
+  is relevant to the current game state:
+    - logistic_model.joblib  — Logistic Regression
+    - forrest_model.joblib   — Random Forest
+    - xgb_model.joblib       — XGBoost
+    - SVC_model.joblib       — Support Vector Classifier
+
+------------------------------------------------------------------------------
+pca_model_59.pkl
+------------------------------------------------------------------------------
+  PCA model that reduces BERT embedding dimensions from 768 to 59
+  before feeding into the classifiers.
+
+------------------------------------------------------------------------------
+data/llm_outputs.csv
+------------------------------------------------------------------------------
+  Output file containing 104 entries with columns:
+  fixture_id, ball_number, question, SQL_query, LLM_answer
+
+------------------------------------------------------------------------------
+data/analysis_report.txt
+------------------------------------------------------------------------------
+  Quality analysis of the 104 LLM outputs:
+    - 78 meaningful answers (75.0%)
+    - 10 meaningless answers (9.6%)
+    - 16 technical errors (15.4%)
+
+------------------------------------------------------------------------------
+req.txt
+------------------------------------------------------------------------------
+  Python dependencies (fastapi, uvicorn, sqlalchemy) plus sample SQL
+  queries used during development.
+
+================================================================================
+END OF DOCUMENT
+================================================================================

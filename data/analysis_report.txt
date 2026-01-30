@@ -1,0 +1,256 @@
+================================================================================
+                    COMPLETE ANALYSIS REPORT
+           LLM_OUTPUTS.CSV - Cricket Statistics Query System
+================================================================================
+
+EXECUTIVE SUMMARY
+================================================================================
+
+Total Questions Analyzed: 104
+
+RESULTS BREAKDOWN:
+  ✅ Meaningful Answers:     78 questions (75.00%)
+  ⚠️  Meaningless Answers:   10 questions ( 9.62%)
+  ❌ Technical Errors:       16 questions (15.38%)
+  ─────────────────────────────────────────────
+  📊 Combined Success:       88 questions (84.62%)
+
+QUALITY METRICS:
+  • True Success Rate (Meaningful):  75.00%
+  • Technical Success Rate:          84.62%
+  • Error Rate:                      15.38%
+  • Meaningless Rate:                 9.62%
+
+================================================================================
+DETAILED BREAKDOWN
+================================================================================
+
+1. MEANINGFUL ANSWERS (78 questions - 75%)
+───────────────────────────────────────────────────────────────
+   These queries executed successfully AND returned useful, logical answers
+   with actual data and insights.
+   
+   Examples:
+   • "Teams batting second averaged 8.44 runs per over at this venue"
+   • "Kolkata Knight Riders have a 58% success rate chasing 106 runs"
+   • "The current run rate of 5.73 is below the historical average of 6.01"
+   
+   Ball Distribution:
+   • Ball 20: 8/8 meaningful (100% - BEST)
+   • Balls 10,15,45,60: 7/8 meaningful (87.5%)
+   • Balls 5,30,35: 6/8 meaningful (75%)
+   • Balls 25,40,55,63: 5/8 meaningful (62.5%)
+   • Ball 50: 4/8 meaningful (50% - WORST)
+
+2. MEANINGLESS ANSWERS (10 questions - 9.6%)
+───────────────────────────────────────────────────────────────
+   Queries executed without errors but returned empty/no-data results.
+   
+   Root Causes:
+   • Overly specific query conditions (9 cases)
+   • Zero/null results from rare scenarios (1 case)
+   
+   Common Patterns:
+   • "Have yet to record..." / "No instances found"
+   • "Teams have struggled significantly" (0% success)
+   • Queries for rare scenarios (e.g., "10 wickets in hand, chasing 100+")
+   
+   Examples of Overly Specific Queries:
+   • Highest chase with 10 wickets intact (very rare)
+   • Specific run rate combinations that haven't occurred
+   • Team-specific scenarios in limited dataset
+
+3. TECHNICAL ERRORS (16 questions - 15.4%)
+───────────────────────────────────────────────────────────────
+   Queries failed to execute due to SQL syntax or schema errors.
+   
+   Error Type Breakdown:
+   • Invalid column names:           7 errors (43.8%)
+     - bowler__fullname in wrong table
+     - score/overs in wrong table
+   
+   • GROUP BY clause errors:         4 errors (25.0%)
+     - Columns in SELECT not in GROUP BY
+   
+   • Subquery cardinality errors:    2 errors (12.5%)
+     - Subquery returned multiple rows
+   
+   • CTE ORDER BY errors:            1 error (6.2%)
+     - ORDER BY without TOP/OFFSET
+   
+   • Other syntax errors:            2 errors (12.5%)
+
+================================================================================
+PERFORMANCE BY BALL NUMBER
+================================================================================
+
+Ball  | Total | Meaningful | Meaningless | Errors | Success% | Quality%
+─────────────────────────────────────────────────────────────────────────
+  5   |   8   |     6      |      2      |   0    |  100.0%  |  75.0%
+ 10   |   8   |     7      |      0      |   1    |   87.5%  |  87.5%
+ 15   |   8   |     7      |      0      |   1    |   87.5%  |  87.5%
+ 20   |   8   |     8      |      0      |   0    |  100.0%  | 100.0% ⭐
+ 25   |   8   |     5      |      2      |   1    |   87.5%  |  62.5%
+ 30   |   8   |     6      |      0      |   2    |   75.0%  |  75.0%
+ 35   |   8   |     6      |      1      |   1    |   87.5%  |  75.0%
+ 40   |   8   |     5      |      0      |   3    |   62.5%  |  62.5%
+ 45   |   8   |     7      |      0      |   1    |   87.5%  |  87.5%
+ 50   |   8   |     4      |      2      |   2    |   75.0%  |  50.0% ⚠️
+ 55   |   8   |     5      |      2      |   1    |   87.5%  |  62.5%
+ 60   |   8   |     7      |      0      |   1    |   87.5%  |  87.5%
+ 63   |   8   |     5      |      1      |   2    |   75.0%  |  62.5%
+
+Legend: Success% = (Meaningful + Meaningless) / Total
+        Quality% = Meaningful / Total
+
+================================================================================
+ROOT CAUSE ANALYSIS
+================================================================================
+
+WHY QUERIES FAIL:
+────────────────────────────────────────────────────────────────
+
+1. Column-Table Mismatch (43.8% of errors)
+   Problem: LLM uses columns that don't exist in specific tables
+   Examples:
+   • bowler__fullname in fixtures__bowling (only in fixtures__balls)
+   • 'score' in fixtures__balls (should be 'score__runs')
+   • 'overs' in fixtures__balls (should be 'ball')
+
+2. GROUP BY Violations (25% of errors)
+   Problem: SELECT columns not in GROUP BY or aggregate
+   Cause: SQL Server strict GROUP BY rules not fully enforced
+
+3. Subquery Issues (12.5% of errors)
+   Problem: Subqueries returning multiple rows
+   Cause: Missing TOP 1 or aggregate functions
+
+WHY ANSWERS ARE MEANINGLESS:
+────────────────────────────────────────────────────────────────
+
+1. Overly Specific Conditions (90% of meaningless)
+   • Combining rare scenarios (e.g., "10 wickets + 100+ runs")
+   • Specific team + venue + condition combinations
+   • Historical queries where data doesn't exist
+
+2. Query Logic Issues (10% of meaningless)
+   • Correct syntax but flawed logic
+   • Wrong JOIN conditions filter out all data
+
+================================================================================
+CURRENT STATUS vs TARGETS
+================================================================================
+
+CURRENT PERFORMANCE:
+  Technical Success:   84.62%  ████████████████████████
+  Meaningful Success:  75.00%  ████████████████████
+  Errors:              15.38%  ████
+  Meaningless:          9.62%  ██
+
+TARGET PERFORMANCE:
+  Technical Success:   95%+    ███████████████████████████
+  Meaningful Success:  85%+    ████████████████████████
+  Errors:              <5%     █
+  Meaningless:         <10%    ██
+
+GAP ANALYSIS:
+  Need to fix:  16 errors     → Target: <5 errors
+  Need to improve: 10 meaningless → Target: keep <10
+
+================================================================================
+RECOMMENDATIONS
+================================================================================
+
+PRIORITY 1 (CRITICAL) - Fix Column-Table Mismatches
+────────────────────────────────────────────────────
+  Impact: Eliminate 7/16 errors (43.8%)
+  Expected: 84.62% → 91.3% technical success
+  
+  Actions:
+  ✓ Already done: Enhanced metadata with ❌ markers
+  → Next: Strengthen validation to block at generation time
+  → Add explicit table-column matrix to prompt
+
+PRIORITY 2 (HIGH) - Fix SQL Syntax Errors
+────────────────────────────────────────────────────
+  Impact: Eliminate 5/16 errors (31.3%)
+  Expected: 91.3% → 96.2% technical success
+  
+  Actions:
+  ✓ Already done: Added CTE ORDER BY, TOP/OFFSET checks
+  → Verify all validation checks are blocking queries
+
+PRIORITY 3 (MEDIUM) - Reduce Meaningless Queries
+────────────────────────────────────────────────────
+  Impact: Improve 10/104 queries (9.6%)
+  Expected: 75% → 85% meaningful success
+  
+  Actions:
+  → Add data availability hints to prompt
+  → Implement fallback logic for overly specific queries
+  → Add answer quality check post-execution
+
+PRIORITY 4 (ONGOING) - Fix Remaining Errors
+────────────────────────────────────────────────────
+  Impact: Eliminate final 4 errors
+  Expected: 96.2% → 98%+ technical success
+  
+  Actions:
+  → Case-by-case investigation of remaining errors
+  → Add specific validation for edge cases
+
+================================================================================
+IMPROVEMENT ROADMAP
+================================================================================
+
+PHASE 1 (Already Completed):
+  ✓ Fixed team_id type conversion errors (11 errors eliminated)
+  ✓ Added table-specific column warnings to metadata
+  ✓ Enhanced prompt with column usage rules
+  ✓ Added CTE and SQL syntax validation
+  Result: 60.58% → 84.62% technical success (+24%)
+
+PHASE 2 (In Progress):
+  → Strengthen column-table mismatch detection
+  → Block invalid queries at generation time
+  → Add comprehensive validation matrix
+  Expected: 84.62% → 95% technical success (+10%)
+
+PHASE 3 (Planned):
+  → Implement query logic improvement
+  → Add data availability checks
+  → Implement retry logic for meaningless results
+  Expected: 75% → 85% meaningful success (+10%)
+
+FINAL TARGET:
+  Technical Success:  95-98%
+  Meaningful Success: 85-90%
+  Total Quality:      >85% usable answers
+
+================================================================================
+CONCLUSION
+================================================================================
+
+The system has shown significant improvement from the initial 60.58% to current
+84.62% technical success rate. With 75% of queries providing meaningful answers,
+the system is already quite effective.
+
+Key Strengths:
+  • 75% of queries provide useful, meaningful answers
+  • Ball 20 achieves 100% quality
+  • Most errors are concentrated in specific categories
+
+Key Areas for Improvement:
+  • Column-table mismatches (7 errors remaining)
+  • GROUP BY validation (4 errors)
+  • Query logic for rare scenarios (10 meaningless)
+
+With the recommended fixes in Phase 2 and 3, the system should achieve:
+  • 95-98% technical success rate
+  • 85-90% meaningful answer rate
+  • <5% error rate
+  • Consistent 80%+ quality across all ball numbers
+
+================================================================================
+END OF REPORT
+================================================================================
