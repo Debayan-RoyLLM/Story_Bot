@@ -17,7 +17,7 @@ from langgraph.graph import START, StateGraph, END
 
 from app.services.llm._config import config, logger, engine, llm
 from app.services.llm._cache import get_cached_query, cache_query
-from app.services.llm.prompt import State, query_prompt_template, QueryOutput
+from app.services.llm.prompt import State, query_prompt_template, QueryOutput, sanity_ranges
 from app.services.validators import validate_generated_query
 
 MAX_RETRIES = 2  # Max regeneration attempts on error
@@ -255,6 +255,66 @@ def write_query(state: State):
     return {"query": last_failed_sql or ""}
 
 
+# ── Helper: Result Sanity Check ────────────────────────────────
+
+# Realistic upper bounds for cricket stats (T20 context)
+SANITY_LIMITS = {
+    "score": 500,           # Max innings score (even ODI rarely exceeds 500)
+    "runs": 500,
+    "chase": 500,
+    "total": 500,
+    "wickets": 10,          # Max 10 wickets per innings
+    "strike_rate": 700,     # Highest T20 SR ~400, leave margin
+    "average": 500,         # Batting avg rarely above 100
+    "economy": 50,          # Economy rate rarely above 20
+    "percentage": 100,      # Can't exceed 100%
+    "count": 50000,         # Sanity cap for match counts
+}
+
+
+def _check_result_sanity(result_text, question):
+    """
+    Check if the SQL result is realistic for cricket data.
+    Returns (is_sane, reason) — reason explains why it's unrealistic.
+    """
+    if not result_text or result_text == "No results returned":
+        return True, ""
+
+    # Try to extract numeric value from result
+    try:
+        # Handle single value results
+        value = float(result_text.replace(",", "").strip())
+    except (ValueError, TypeError):
+        # Multi-row or text result — can't sanity check
+        return True, ""
+
+    question_lower = question.lower()
+
+    # Check against relevant limits based on question keywords
+    for keyword, limit in SANITY_LIMITS.items():
+        if keyword in question_lower:
+            if abs(value) > limit:
+                reason = (
+                    f"Result {value} is unrealistic for '{keyword}' "
+                    f"(expected max ~{limit}). "
+                    f"Likely cause: query is aggregating across multiple matches "
+                    f"without proper GROUP BY fixture_id, or missing WHERE filters."
+                )
+                logger.warning(f"Sanity check FAILED: {reason}")
+                return False, reason
+
+    # Generic check: if result is absurdly large
+    if abs(value) > 100000:
+        reason = (
+            f"Result {value} is unrealistically large. "
+            f"Likely aggregating across all matches without GROUP BY fixture_id."
+        )
+        logger.warning(f"Sanity check FAILED: {reason}")
+        return False, reason
+
+    return True, ""
+
+
 # ── Node 2: Execute Query + Retry on Error ───────────────────
 
 def execute_query(state: State):
@@ -270,6 +330,16 @@ def execute_query(state: State):
 
     if not query:
         return {"result": "Error: No query provided"}
+
+    # ── Safety guard: block non-SELECT queries ──
+    FORBIDDEN = ("INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE", "MERGE", "CREATE", "EXEC")
+    query_stripped = query.strip().upper()
+    if not query_stripped.startswith(("SELECT", "WITH")):
+        logger.error(f"BLOCKED non-SELECT query: {query[:80]}")
+        return {"result": "Error: Only SELECT queries are allowed"}
+    if any(keyword in query_stripped for keyword in FORBIDDEN):
+        logger.error(f"BLOCKED destructive keyword in query: {query[:80]}")
+        return {"result": "Error: Query contains forbidden operation (INSERT/UPDATE/DELETE/DROP)"}
 
     for attempt in range(MAX_RETRIES + 1):
         if attempt == 0:
@@ -302,6 +372,27 @@ def execute_query(state: State):
 
                 logger.info("Execution successful")
                 logger.info(f"Rows returned: {len(rows)}")
+
+                # ── Sanity check result ──
+                is_sane, sanity_reason = _check_result_sanity(result_text, question)
+                if not is_sane:
+                    # Treat as an error — regenerate
+                    error_msg = f"Sanity check failed: {sanity_reason}"
+                    logger.warning(error_msg)
+                    if attempt < MAX_RETRIES:
+                        try:
+                            new_sql, is_valid, val_error, warnings = _regenerate_query(
+                                question, query, error_msg, table_info, dialect
+                            )
+                            if is_valid:
+                                logger.info("Regenerated query after sanity failure, retrying...")
+                                query = new_sql
+                                continue
+                        except Exception as regen_e:
+                            logger.error(f"Regeneration after sanity failure: {str(regen_e)}")
+                    # Last attempt or regen failed — return with warning
+                    return {"result": f"{result_text} (⚠️ {sanity_reason})", "query": query}
+
                 cache_query(question, query)
                 return {"result": result_text, "query": query}
 

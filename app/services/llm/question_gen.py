@@ -5,6 +5,7 @@ Uses OpenAI to generate statistical questions from match narrative.
 Single LLM call — generates clear, SQL-queryable questions directly.
 """
 
+import re
 from app.services.llm._config import client, config
 
 
@@ -37,7 +38,19 @@ def generate_questions(narrative):
 
 def stat_questions(sentences):
     """
-    Clean up question list — remove empty lines and formatting artifacts.
+    Clean up question list:
+    - Remove empty lines
+    - Strip number prefixes like "1. ", "2) ", "- "
+    - Remove formatting artifacts
     """
-    cleaned = [s.strip() for s in sentences if s.strip()]
+    cleaned = []
+    for s in sentences:
+        s = s.strip()
+        if not s:
+            continue
+        # Remove "1. ", "2) ", "- ", "* " prefixes
+        s = re.sub(r'^[\d]+[\.\)\-\:\s]+', '', s).strip()
+        s = re.sub(r'^[\-\*\•]\s+', '', s).strip()
+        if s:
+            cleaned.append(s)
     return cleaned
