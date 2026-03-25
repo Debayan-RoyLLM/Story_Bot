@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+sqlalchemy
+pyodbc
+python-dotenv
+openai
+langchain-openai
+langchain-community
+langgraph
+langsmith
+transformers
+torch
+joblib
+numpy

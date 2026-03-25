@@ -1,0 +1,57 @@
+{
+  "history2.fixtures__balls": {
+    "fixture_id": "Unique identifier of the cricket match.",
+    "team__id": "⚠️ NUMERIC team identifier (NOT team name). Use with scoreboard filter.",
+    "scoreboard": "Choose S1 for Bowling team and S2 for Batting/Chasing team.",
+    "batsman_id": "Unique identifier of batsman at striker end.",
+    "batsman__fullname": "Batsman name (ONLY exists in fixtures__balls)",
+    "bowler__fullname": "Bowler name (ONLY exists in fixtures__balls)",
+    "ball": "Ball number in the innings (decimal format, e.g., 5.3 for 5th over, 3rd ball).",
+    "score__runs": "Runs scored on this ball (0-6+). ⚠️ NOT 'score' or 'runs'",
+    "score__is_wicket": "Indicates if wicket fell (0 or 1). ⚠️ NOT 'is_wicket'",
+    "batsman_one_on_creeze_id": "Striker batsman ID.",
+    "batsman_two_on_creeze_id": "Non-striker batsman ID.",
+    "❌ NO 'score'": "Use score__runs in this table",
+    "❌ NO 'overs'": "Use ball instead, or join to fixtures__runs for overs",
+    "❌ NO 'wickets'": "Use score__is_wicket for individual balls, or join to fixtures__runs for total"
+  },
+  "history2.fixtures__batting": {
+    "fixture_id": "Unique identifier of the cricket match.",
+    "team_id": "⚠️ NUMERIC team identifier (NOT team name). Use with scoreboard filter.",
+    "scoreboard": "S2 for batting team and S1 for bowling team.",
+    "player_id": "Batsman ID. ⚠️ Use player_id NOT player__id",
+    "ball": "Ball number when this batting stat was recorded.",
+    "score": "✓ Batsman runs (Use 'score' in fixtures__batting, NOT 'score__runs')",
+    "bowling_player_id": "ID of the bowler.",
+    "rate": "Batting strike rate. ⚠️ Verify exists in schema",
+    "❌ NO 'batsman__fullname'": "Join to fixtures__balls for batsman names",
+    "❌ NO 'score__runs'": "Use 'score' in this table, not 'score__runs'",
+    "❌ NO 'overs'": "Use ball number instead"
+  },
+  "history2.fixtures__bowling": {
+    "fixture_id": "Unique identifier of the cricket match.",
+    "team_id": "⚠️ NUMERIC team identifier (NOT team name). Use with scoreboard filter.",
+    "scoreboard": "S1 for bowling team and S2 for batting team.",
+    "player_id": "Bowler ID (use this for joins)",
+    "overs": "Over number (decimal: 5.3 means 5th over, 3rd ball).",
+    "runs": "Runs conceded by bowler (NOT 'score' or 'score__runs')",
+    "wickets": "Wickets taken by bowler till that over.",
+    "rate": "Bowling economy rate.",
+    "❌ NO 'bowler__fullname'": "CRITICAL: Join to fixtures__balls for bowler names!",
+    "❌ NO 'batsman_id'": "Join to fixtures__balls for batsman information",
+    "❌ NO 'score'": "Use 'runs' for runs conceded in this table",
+    "❌ NO 'ball'": "Use 'overs' in this table"
+  },
+  "history2.fixtures__runs": {
+    "fixture_id": "Unique identifier of the cricket match.",
+    "team_id": "⚠️ NUMERIC team identifier (NOT team name). Use with scoreboard filter.",
+    "inning": "Choose inning = 2 for chasing/batting team and inning = 1 for bowling/defending team. ⚠️ ONLY in fixtures__runs, NOT in fixtures__balls. inning 2 is same as scoreboard S2",
+    "score": "Total runs in inning.",
+    "wickets": "Total wickets lost in inning.",
+    "overs": "Total overs played (decimal format).",
+    "❌ NO 'batsman__fullname'": "Join to fixtures__balls for player names",
+    "❌ NO 'bowler__fullname'": "Join to fixtures__balls for player names",
+    "❌ NO 'ball'": "Use 'overs' in this table for total overs",
+    "❌ NO 'score__runs'": "Use 'score' for total innings score"
+  }
+}
