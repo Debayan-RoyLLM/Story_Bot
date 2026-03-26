@@ -63,44 +63,12 @@ class QueryConfig:
     MAX_RESULTS_DISPLAY = 10  # rows to display before truncation
     DEFAULT_LLM_MODEL = "gpt-4o-mini"
 
-    # CHASE-SQL reasoning paths
-    CHASE_REASONING_PATHS = [
-        {
-            "name": "event_first",
-            "instruction": (
-                "Start from ball-by-ball events and filter conditions early. "
-                "Then aggregate if required."
-            )
-        },
-        {
-            "name": "aggregation_first",
-            "instruction": (
-                "Determine the required aggregation first, then identify the "
-                "minimum tables and joins needed."
-            )
-        },
-        {
-            "name": "player_first",
-            "instruction": (
-                "Focus on player involvement first (batsman/bowler), then "
-                "derive match-level constraints."
-            )
-        },
-        {
-            "name": "chase_context",
-            "instruction": (
-                "Assume this is a chase scenario. Explicitly reason using "
-                "scoreboard = 'S2' and inning = 2 when applicable."
-            )
-        }
-    ]
-
 
 class StatementConfig:
     """Statement generation configuration."""
 
     REQUIRED_VALID_STATEMENTS = 8
-    RANDOM_FOREST_THRESHOLD = 0.5  # Probability threshold for valid statements
+    RANDOM_FOREST_THRESHOLD = 0.6  # Probability threshold for valid statements
 
     # Game state keys for BERT embedding
     GAME_STATE_KEYS = [
@@ -115,6 +83,7 @@ class FileConfig:
 
     METADATA_FILE = CONFIG_DIR / "metadata.json"
     PROMPT_TEMPLATE_FILE = CONFIG_DIR / "prompt_template.txt"
+    CRICKET_KNOWLEDGE_FILE = CONFIG_DIR / "cricket_knowledge.txt"
 
 
 class APIConfig:

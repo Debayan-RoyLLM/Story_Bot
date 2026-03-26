@@ -1,15 +1,14 @@
 """
 Shared Singletons
 
-All shared state lives here: DB engine, OpenAI client, LLM instance,
-config, logger. Other modules in the llm package import from here
-instead of creating their own connections.
+All shared state lives here: DB engine, LLM instance, config, logger.
+Other modules in the llm package import from here instead of creating
+their own connections.
 """
 
 import os
 import logging
 from urllib.parse import quote
-from openai import OpenAI
 from sqlalchemy import create_engine
 from langchain_openai import ChatOpenAI
 
@@ -29,9 +28,6 @@ logger = logging.getLogger("app.services.llm")
 # ── API Keys ─────────────────────────────────────────────────────
 api_key_openai = config.api.get_openai_api_key()
 password = config.api.get_sql_password()
-
-# ── OpenAI Client (for direct API calls) ─────────────────────────
-client = OpenAI(api_key=api_key_openai)
 
 # ── Database Engine (shared by query execution + validator dry-run)
 engine = create_engine(config.db.get_connection_string(password))

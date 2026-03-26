@@ -2,100 +2,41 @@
 LangGraph Workflow Nodes
 
 Three nodes that form the SQL generation pipeline:
-    1. write_query     → LLM generates SQL (CHASE-SQL, 4 strategies)
+    1. write_query     → DIN-SQL planning + LLM generates SQL
     2. execute_query   → Run SQL on database, retry with LLM on error
-    3. generate_answer → LLM converts SQL result to natural language
+    3. generate_answer → LLM converts SQL result to natural language (cricket-aware)
 
 Also compiles the graph:
     START → write_query → execute_query → generate_answer → END
-"""
 
-import re
+Supporting logic lives in dedicated modules:
+    - template_fixes.py  → regex-based SQL error correction (no LLM)
+    - sanity_check.py    → cricket domain validation of query results
+    - query_safety.py    → pre-execution safety guards (block non-SELECT, forbidden tables)
+"""
 
 from sqlalchemy import text
 from langgraph.graph import START, StateGraph, END
 
 from app.services.llm._config import config, logger, engine, llm
 from app.services.llm._cache import get_cached_query, cache_query
-from app.services.llm.prompt import State, query_prompt_template, QueryOutput, sanity_ranges
+from app.services.llm.prompt import (
+    State, query_prompt_template, QueryOutput,
+    CRICKET_ANSWER_CONTEXT,
+)
+from app.services.llm.din_sql import din_sql_pipeline
+from app.services.llm.template_fixes import try_template_fix
+from app.services.llm.sanity_check import check_result_sanity
+from app.services.llm.query_safety import check_forbidden_tables, check_query_safety
 from app.services.validators import validate_generated_query
 
 MAX_RETRIES = 2  # Max regeneration attempts on error
 
 
-# ── Helper: Template-based fix (no LLM) ───────────────────────
-
-def _try_template_fix(failed_sql, error_msg):
-    """
-    Attempt to fix common SQL errors with string replacement.
-    Returns fixed SQL or None if no template matches.
-    """
-    error_lower = error_msg.lower()
-    sql = failed_sql
-
-    # ── Invalid column name fixes ──
-    if "invalid column name" in error_lower:
-        if "'score'" in error_lower and "fixtures__balls" in sql.lower():
-            logger.info("Template fix: score → score__runs (fixtures__balls)")
-            return re.sub(r'(?<!\w)score(?!\w)', 'score__runs', sql, flags=re.IGNORECASE)
-
-        if "'overs'" in error_lower and "fixtures__balls" in sql.lower():
-            logger.info("Template fix: overs → ball (fixtures__balls)")
-            return re.sub(r'(?<!\w)overs(?!\w)', 'ball', sql, flags=re.IGNORECASE)
-
-        if "'runs'" in error_lower and "fixtures__balls" in sql.lower():
-            logger.info("Template fix: runs → score__runs (fixtures__balls)")
-            return re.sub(r'(?<!\w)runs(?!\w)', 'score__runs', sql, flags=re.IGNORECASE)
-
-        if "'ball'" in error_lower and "fixtures__bowling" in sql.lower():
-            logger.info("Template fix: ball → overs (fixtures__bowling)")
-            return re.sub(r'(?<!\w)ball(?!\w)', 'overs', sql, flags=re.IGNORECASE)
-
-        if "'score__runs'" in error_lower and "fixtures__batting" in sql.lower():
-            logger.info("Template fix: score__runs → score (fixtures__batting)")
-            return re.sub(r'(?<!\w)score__runs(?!\w)', 'score', sql, flags=re.IGNORECASE)
-
-        if "'score__runs'" in error_lower and "fixtures__runs" in sql.lower():
-            logger.info("Template fix: score__runs → score (fixtures__runs)")
-            return re.sub(r'(?<!\w)score__runs(?!\w)', 'score', sql, flags=re.IGNORECASE)
-
-        if "'score'" in error_lower and "fixtures__bowling" in sql.lower():
-            logger.info("Template fix: score → runs (fixtures__bowling)")
-            return re.sub(r'(?<!\w)score(?!\w)', 'runs', sql, flags=re.IGNORECASE)
-
-    # ── LIMIT → TOP (MySQL syntax in T-SQL) ──
-    limit_match = re.search(r'LIMIT\s+(\d+)', sql, re.IGNORECASE)
-    if limit_match:
-        n = limit_match.group(1)
-        logger.info(f"Template fix: LIMIT {n} → TOP {n}")
-        sql = re.sub(r'\s*LIMIT\s+\d+', '', sql, flags=re.IGNORECASE)
-        sql = re.sub(r'SELECT\s', f'SELECT TOP {n} ', sql, count=1, flags=re.IGNORECASE)
-        return sql
-
-    # ── Subquery returned more than 1 value → add TOP 1 ──
-    if "subquery returned more than 1 value" in error_lower:
-        logger.info("Template fix: adding TOP 1 to subquery")
-        return re.sub(
-            r'\(\s*SELECT\s+(?!TOP\s)',
-            '(SELECT TOP 1 ',
-            sql, count=1, flags=re.IGNORECASE
-        )
-
-    # ── Divide by zero → wrap denominator with NULLIF ──
-    if "divide by zero" in error_lower:
-        logger.info("Template fix: wrapping denominator with NULLIF")
-        return re.sub(
-            r'/\s*(\w+\.\w+|\w+)',
-            r'/ NULLIF(\1, 0)',
-            sql, count=1
-        )
-
-    return None  # No template matched
-
-
 # ── Helper: Regenerate with LLM (fallback) ─────────────────────
 
-def _regenerate_query(question, failed_sql, error_msg, table_info, dialect):
+def _regenerate_query(question, failed_sql, error_msg, table_info, dialect,
+                      din_context="", warnings_from_validation=None):
     """
     Try template fix first (free, instant). If that doesn't work,
     send the failed SQL + error to the LLM for regeneration.
@@ -103,7 +44,7 @@ def _regenerate_query(question, failed_sql, error_msg, table_info, dialect):
     Returns: (new_sql, is_valid, validation_error, warnings)
     """
     # ── Step 1: Try template fix (no LLM call) ──
-    template_fix = _try_template_fix(failed_sql, error_msg)
+    template_fix = try_template_fix(failed_sql, error_msg)
     if template_fix:
         is_valid, val_error, warnings = validate_generated_query(
             template_fix, table_info, question, engine=engine
@@ -116,9 +57,21 @@ def _regenerate_query(question, failed_sql, error_msg, table_info, dialect):
 
     # ── Step 2: Template didn't work → ask LLM ──
     logger.info("No template fix available — calling LLM for regeneration")
+
+    # Build warning context so the LLM knows about detected issues
+    warning_text = ""
+    if warnings_from_validation:
+        warning_text = "\nWARNINGS from validation (fix these too):\n"
+        warning_text += "\n".join(f"- {w}" for w in warnings_from_validation)
+
+    # Include DIN-SQL plan if available so the LLM has schema guidance
+    plan_text = ""
+    if din_context:
+        plan_text = f"\n{din_context}\n"
+
     fix_prompt = f"""
 The following SQL query FAILED. Fix it.
-
+{plan_text}
 QUESTION: {question}
 
 FAILED SQL:
@@ -126,7 +79,7 @@ FAILED SQL:
 
 ERROR:
 {error_msg}
-
+{warning_text}
 Generate a corrected SQL Server (T-SQL) query that fixes the error above.
 Follow ALL schema, join, and restriction rules strictly.
 """
@@ -149,17 +102,17 @@ Follow ALL schema, join, and restriction rules strictly.
     return new_sql, is_valid, val_error, warnings
 
 
-# ── Node 1: Write Query (LLM Call #3) ───────────────────────────
+# ── Node 1: Write Query (DIN-SQL + LLM Generation) ──────────────
 
 def write_query(state: State):
     """
-    Generate SQL using CHASE-SQL multi-path reasoning.
+    Generate SQL using DIN-SQL decomposed planning.
 
     Flow:
-        1. Try each CHASE path until one passes validation
-        2. If valid → return immediately
-        3. If all 4 fail → send last error to LLM for regeneration (up to MAX_RETRIES)
-        4. If still fails → return best-effort query
+        1. Check cache
+        2. Run DIN-SQL pipeline (schema link → decompose)
+        3. Generate SQL with DIN plan as context
+        4. Validate; if invalid → retry with error feedback (up to MAX_RETRIES)
     """
     question = state["question"]
     table_info = state["table_info"]
@@ -169,71 +122,86 @@ def write_query(state: State):
     cached = get_cached_query(question)
     if cached:
         logger.info(f"Cache HIT — skipping LLM generation for: {question[:60]}...")
-        return {"query": cached}
+        return {"query": cached, "din_context": "", "query_warnings": []}
 
     logger.info("=" * 70)
-    logger.info("CHASE-SQL Multi-Path Generation")
+    logger.info("DIN-SQL Query Generation")
     logger.info(f"Question: {question}")
     logger.info("=" * 70)
 
     last_failed_sql = None
     last_error_msg = None
+    last_warnings = []
 
-    # ── Phase 1: Try CHASE-SQL paths ──────────────────────────
-    for path in config.query.CHASE_REASONING_PATHS:
-        chase_instruction = f"""
-        Reasoning strategy: {path['name']}
-        {path['instruction']}
+    # ── Phase 1: DIN-SQL Planning (schema link → decompose) ─────
+    din_context = ""
+    try:
+        din_context = din_sql_pipeline(question, table_info, dialect)
+    except Exception as e:
+        logger.warning(f"DIN-SQL planning failed ({e}), generating without plan")
+        din_context = ""
 
-        Generate ONE valid SQL Server (T-SQL) query.
-        Follow ALL schema, join, and restriction rules strictly.
-        """
+    # ── Phase 2: Generate SQL with DIN plan context ───────────
+    generation_input = question
+    if din_context:
+        generation_input = f"{din_context}\n\n{question}"
 
-        prompt_input = {
-            "input": question + chase_instruction,
-            "table_info": table_info,
-            "dialect": dialect,
-        }
+    prompt_input = {
+        "input": generation_input + "\n\nGenerate ONE valid SQL Server (T-SQL) query.\n"
+                 "Follow ALL schema, join, and restriction rules strictly.",
+        "table_info": table_info,
+        "dialect": dialect,
+    }
 
-        messages = query_prompt_template.format_messages(**prompt_input)
-        structured_llm = llm.with_structured_output(QueryOutput)
+    messages = query_prompt_template.format_messages(**prompt_input)
+    structured_llm = llm.with_structured_output(QueryOutput)
 
-        try:
-            logger.info(f"Path '{path['name']}': Generating query...")
-            result = structured_llm.invoke(messages)
-            sql = result["query"]
-            logger.debug(f"Generated: {sql[:70]}...")
+    try:
+        logger.info("Generating SQL with DIN-SQL plan...")
+        result = structured_llm.invoke(messages)
+        sql = result["query"]
+        logger.debug(f"Generated: {sql[:70]}...")
 
-            is_valid, error_msg, warnings = validate_generated_query(
-                sql, table_info, question, engine=engine
-            )
+        # ── Pre-validation: check for forbidden tables ──
+        forbidden_err = check_forbidden_tables(sql)
+        if forbidden_err:
+            logger.warning(f"Forbidden table detected: {forbidden_err}")
+            last_failed_sql = sql
+            last_error_msg = forbidden_err
+            raise ValueError(forbidden_err)
 
-            if is_valid:
-                logger.info(f"Query VALID! Strategy: {path['name']}")
-                if warnings:
-                    for w in warnings:
-                        logger.warning(f"  {w}")
-                return {"query": sql}
-            else:
-                logger.warning(f"Query INVALID: {error_msg}")
-                last_failed_sql = sql
-                last_error_msg = error_msg
-                continue
+        is_valid, error_msg, warnings = validate_generated_query(
+            sql, table_info, question, engine=engine
+        )
 
-        except Exception as e:
-            logger.error(f"Query generation error: {str(e)}")
-            continue
+        if is_valid:
+            logger.info("Query VALID on first attempt!")
+            if warnings:
+                for w in warnings:
+                    logger.warning(f"  {w}")
+            return {"query": sql, "din_context": din_context, "query_warnings": warnings}
+        else:
+            logger.warning(f"Query INVALID: {error_msg}")
+            last_failed_sql = sql
+            last_error_msg = error_msg
+            last_warnings = warnings
 
-    # ── Phase 2: All paths failed → retry with error feedback ─
-    logger.warning("All CHASE-SQL paths failed! Attempting regeneration...")
+    except Exception as e:
+        logger.error(f"Query generation error: {str(e)}")
+        last_failed_sql = ""
+        last_error_msg = str(e)
+
+    # ── Phase 3: Retry with error feedback ────────────────────
+    logger.warning("Initial generation failed. Attempting regeneration...")
 
     for attempt in range(1, MAX_RETRIES + 1):
         logger.info(f"Regeneration attempt {attempt}/{MAX_RETRIES}")
-        logger.info(f"Feeding error back to LLM: {last_error_msg[:100]}...")
+        logger.info(f"Feeding error back to LLM: {(last_error_msg or '')[:100]}...")
 
         try:
             new_sql, is_valid, val_error, warnings = _regenerate_query(
-                question, last_failed_sql, last_error_msg, table_info, dialect
+                question, last_failed_sql, last_error_msg, table_info, dialect,
+                din_context=din_context, warnings_from_validation=last_warnings
             )
 
             if is_valid:
@@ -241,78 +209,19 @@ def write_query(state: State):
                 if warnings:
                     for w in warnings:
                         logger.warning(f"  {w}")
-                return {"query": new_sql}
+                return {"query": new_sql, "din_context": din_context, "query_warnings": warnings}
             else:
                 logger.warning(f"Regeneration attempt {attempt} INVALID: {val_error}")
                 last_failed_sql = new_sql
                 last_error_msg = val_error
+                last_warnings = warnings
 
         except Exception as e:
             logger.error(f"Regeneration error: {str(e)}")
 
-    # ── Phase 3: All retries exhausted → return last attempt ──
+    # ── Phase 4: All retries exhausted → return last attempt ──
     logger.error("All regeneration attempts failed. Returning last query.")
-    return {"query": last_failed_sql or ""}
-
-
-# ── Helper: Result Sanity Check ────────────────────────────────
-
-# Realistic upper bounds for cricket stats (T20 context)
-SANITY_LIMITS = {
-    "score": 500,           # Max innings score (even ODI rarely exceeds 500)
-    "runs": 500,
-    "chase": 500,
-    "total": 500,
-    "wickets": 10,          # Max 10 wickets per innings
-    "strike_rate": 700,     # Highest T20 SR ~400, leave margin
-    "average": 500,         # Batting avg rarely above 100
-    "economy": 50,          # Economy rate rarely above 20
-    "percentage": 100,      # Can't exceed 100%
-    "count": 50000,         # Sanity cap for match counts
-}
-
-
-def _check_result_sanity(result_text, question):
-    """
-    Check if the SQL result is realistic for cricket data.
-    Returns (is_sane, reason) — reason explains why it's unrealistic.
-    """
-    if not result_text or result_text == "No results returned":
-        return True, ""
-
-    # Try to extract numeric value from result
-    try:
-        # Handle single value results
-        value = float(result_text.replace(",", "").strip())
-    except (ValueError, TypeError):
-        # Multi-row or text result — can't sanity check
-        return True, ""
-
-    question_lower = question.lower()
-
-    # Check against relevant limits based on question keywords
-    for keyword, limit in SANITY_LIMITS.items():
-        if keyword in question_lower:
-            if abs(value) > limit:
-                reason = (
-                    f"Result {value} is unrealistic for '{keyword}' "
-                    f"(expected max ~{limit}). "
-                    f"Likely cause: query is aggregating across multiple matches "
-                    f"without proper GROUP BY fixture_id, or missing WHERE filters."
-                )
-                logger.warning(f"Sanity check FAILED: {reason}")
-                return False, reason
-
-    # Generic check: if result is absurdly large
-    if abs(value) > 100000:
-        reason = (
-            f"Result {value} is unrealistically large. "
-            f"Likely aggregating across all matches without GROUP BY fixture_id."
-        )
-        logger.warning(f"Sanity check FAILED: {reason}")
-        return False, reason
-
-    return True, ""
+    return {"query": last_failed_sql or "", "din_context": din_context, "query_warnings": last_warnings}
 
 
 # ── Node 2: Execute Query + Retry on Error ───────────────────
@@ -327,19 +236,15 @@ def execute_query(state: State):
     question = state.get("question", "")
     table_info = state.get("table_info", {})
     dialect = state.get("dialect", config.db.DIALECT)
+    din_context = state.get("din_context", "")
 
     if not query:
         return {"result": "Error: No query provided"}
 
-    # ── Safety guard: block non-SELECT queries ──
-    FORBIDDEN = ("INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE", "MERGE", "CREATE", "EXEC")
-    query_stripped = query.strip().upper()
-    if not query_stripped.startswith(("SELECT", "WITH")):
-        logger.error(f"BLOCKED non-SELECT query: {query[:80]}")
-        return {"result": "Error: Only SELECT queries are allowed"}
-    if any(keyword in query_stripped for keyword in FORBIDDEN):
-        logger.error(f"BLOCKED destructive keyword in query: {query[:80]}")
-        return {"result": "Error: Query contains forbidden operation (INSERT/UPDATE/DELETE/DROP)"}
+    # ── Safety guard ──
+    safety_error = check_query_safety(query)
+    if safety_error:
+        return {"result": safety_error}
 
     for attempt in range(MAX_RETRIES + 1):
         if attempt == 0:
@@ -358,15 +263,28 @@ def execute_query(state: State):
                     execution_options={"timeout": config.query.MAX_QUERY_TIMEOUT}
                 )
                 rows = result.fetchall()
+                col_names = list(result.keys())
 
                 if not rows:
                     result_text = "No results returned"
                 elif len(rows) == 1:
-                    result_text = str(rows[0][0]) if rows[0] else "NULL"
+                    # Single row — show "column = value" so the answer LLM
+                    # knows what the number represents
+                    if len(col_names) == 1:
+                        result_text = f"{col_names[0]} = {rows[0][0]}"
+                    else:
+                        result_text = ", ".join(
+                            f"{col}={val}" for col, val in zip(col_names, rows[0])
+                        )
                 else:
-                    result_text = "\n".join(
-                        str(row) for row in rows[:config.query.MAX_RESULTS_DISPLAY]
-                    )
+                    # Multi-row — add a header line so the answer LLM can
+                    # distinguish per-match breakdowns from totals
+                    header = " | ".join(col_names)
+                    data_rows = [
+                        " | ".join(str(v) for v in row)
+                        for row in rows[:config.query.MAX_RESULTS_DISPLAY]
+                    ]
+                    result_text = f"Columns: {header}\n" + "\n".join(data_rows)
                     if len(rows) > config.query.MAX_RESULTS_DISPLAY:
                         result_text += f"\n... ({len(rows) - config.query.MAX_RESULTS_DISPLAY} more rows)"
 
@@ -374,15 +292,15 @@ def execute_query(state: State):
                 logger.info(f"Rows returned: {len(rows)}")
 
                 # ── Sanity check result ──
-                is_sane, sanity_reason = _check_result_sanity(result_text, question)
+                is_sane, sanity_reason = check_result_sanity(result_text, question)
                 if not is_sane:
-                    # Treat as an error — regenerate
                     error_msg = f"Sanity check failed: {sanity_reason}"
                     logger.warning(error_msg)
                     if attempt < MAX_RETRIES:
                         try:
                             new_sql, is_valid, val_error, warnings = _regenerate_query(
-                                question, query, error_msg, table_info, dialect
+                                question, query, error_msg, table_info, dialect,
+                                din_context=din_context, warnings_from_validation=[]
                             )
                             if is_valid:
                                 logger.info("Regenerated query after sanity failure, retrying...")
@@ -414,12 +332,13 @@ def execute_query(state: State):
             logger.info(f"Sending execution error to LLM for regeneration...")
             try:
                 new_sql, is_valid, val_error, warnings = _regenerate_query(
-                    question, query, error_msg, table_info, dialect
+                    question, query, error_msg, table_info, dialect,
+                    din_context=din_context, warnings_from_validation=[]
                 )
 
                 if is_valid:
                     logger.info("Regenerated query passed validation, retrying execution...")
-                    query = new_sql  # Use new query on next loop iteration
+                    query = new_sql
                 else:
                     logger.warning(f"Regenerated query failed validation: {val_error}")
                     return {"result": f"Error: Regeneration failed validation - {val_error}"}
@@ -431,7 +350,7 @@ def execute_query(state: State):
     return {"result": f"Error: All {MAX_RETRIES} retry attempts exhausted"}
 
 
-# ── Node 3: Generate Answer (LLM Call #4) ────────────────────
+# ── Node 3: Generate Answer (LLM Call) ────────────────────
 
 def generate_answer(state: State):
     """
@@ -441,6 +360,7 @@ def generate_answer(state: State):
     question = state.get("question", "")
     query = state.get("query", "")
     result = state.get("result", "")
+    query_warnings = state.get("query_warnings", [])
 
     logger.info("=" * 70)
     logger.info("GENERATING ANSWER")
@@ -454,14 +374,33 @@ def generate_answer(state: State):
         logger.warning("No data returned from query")
         return {"answer": "No data found matching the query criteria."}
 
+    # Surface any validation warnings so the answer LLM knows about potential issues
+    warning_text = ""
+    if query_warnings:
+        warning_text = "\nQUERY WARNINGS (the SQL may have issues — factor these into your answer):\n"
+        warning_text += "\n".join(f"- {w}" for w in query_warnings)
+        warning_text += "\n"
+
     try:
         prompt = (
-            "Given the following user question, SQL query, and SQL result, "
-            "answer the question in a clear, concise manner suitable for a cricket broadcast.\n\n"
-            f'Question: {question}\n'
-            f'SQL Query: {query}\n'
-            f'SQL Result: {result}\n\n'
-            "Format the answer to be interesting for broadcast commentary."
+            "You are a cricket analytics expert. Provide concise, data-driven insights, not play-by-play commentary.\n\n"
+            f"{CRICKET_ANSWER_CONTEXT}\n\n"
+            "CRITICAL PLAUSIBILITY RULES — check BEFORE answering:\n"
+            "- A single bowler CANNOT take more than 10 wickets in a match (typically max 4-5 in T20).\n"
+            "- A team CANNOT lose more than 10 wickets per innings (max 20 per match across both innings).\n"
+            "- Batting average below 3.0 is almost certainly a data/query error.\n"
+            "- Economy rate above 36 or below 0 is impossible.\n"
+            "- Strike rate above 700 is impossible.\n"
+            "- If a value is NULL, missing, or clearly anomalous, say so explicitly — do NOT fabricate analysis around missing data.\n"
+            "- If the SQL result looks like multiple rows (e.g., per-match breakdown) but the question asks for a single total, note the mismatch.\n"
+            "- If any value violates cricket logic, flag it: 'This result appears unreliable due to [reason]. The query may need correction.'\n\n"
+            f"Question: {question}\n"
+            f"SQL Query: {query}\n"
+            f"SQL Result: {result}\n"
+            f"{warning_text}\n"
+            "Provide a calm, fact-based answer that focuses on key performance indicators (e.g., strike rate, economy, run rate, wickets efficiency, chase context). "
+            "Avoid storytelling or flamboyant commentary language. "
+            "Give a clear conclusion and one or two actionable observations."
         )
 
         response = llm.invoke(prompt)

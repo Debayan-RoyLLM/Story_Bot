@@ -1,0 +1,451 @@
+====================================
+CRICKET DOMAIN KNOWLEDGE FOR SQL
+====================================
+This file contains cricket-specific logic that MUST be applied
+when translating natural language questions into SQL queries.
+SQL that ignores these rules will produce wrong results.
+
+====================================
+1. BALL FORMAT & ARITHMETIC
+====================================
+The 'ball' column uses DECIMAL format: over.ball_in_over
+  - ball = 5.3 means 5th over, 3rd ball (NOT the decimal number 5.3)
+  - ball = 0.1 is the 1st ball of the match
+  - ball = 19.6 is the last ball of a T20 match (20th over, 6th ball)
+  - Each over has balls .1 through .6 (NOT .1 through .9)
+  - ball = 5.7 does NOT exist — after 5.6 comes 6.1
+
+BALL-TO-NUMBER CONVERSION TABLE (LLMs often get this wrong):
+  ball = 0.1 → ball #1    |  ball = 0.6 → ball #6
+  ball = 1.1 → ball #7    |  ball = 1.6 → ball #12
+  ball = 2.1 → ball #13   |  ball = 2.6 → ball #18
+  ball = 3.1 → ball #19   |  ball = 4.6 → ball #30
+  ball = 5.3 → ball #33   |  (5 complete overs × 6 = 30, + 3 = 33)
+  ball = 9.5 → ball #59   |  (9 × 6 = 54, + 5 = 59)
+  ball = 14.6 → ball #90  |  (14 × 6 = 84, + 6 = 90)
+  ball = 19.6 → ball #120 |  (19 × 6 = 114, + 6 = 120) — last T20 ball
+
+  Formula: ball_number = FLOOR(ball_column) * 6 + ROUND((ball_column % 1) * 10)
+  BUT you almost NEVER need this formula — use COUNT(*) instead.
+
+OVER-TO-BALL RANGE MAPPING:
+  Over 1  = ball 0.1 to 0.6  (balls 1-6)
+  Over 2  = ball 1.1 to 1.6  (balls 7-12)
+  Over 5  = ball 4.1 to 4.6  (balls 25-30)
+  Over 6  = ball 5.1 to 5.6  (balls 31-36)
+  Over 10 = ball 9.1 to 9.6  (balls 55-60)
+  Over 15 = ball 14.1 to 14.6 (balls 85-90)
+  Over 20 = ball 19.1 to 19.6 (balls 115-120)
+
+  Pattern: "Over N" → ball ranges from (N-1).1 to (N-1).6
+  "First N overs" → WHERE ball <= (N-1).6
+  "Last N overs of T20" → WHERE ball >= (20-N).1
+
+COMMON PHASE FILTERS:
+  "Powerplay" (overs 1-6)        → WHERE ball <= 5.6
+  "Middle overs" (overs 7-15)    → WHERE ball >= 6.1 AND ball <= 14.6
+  "Death overs" (overs 16-20)    → WHERE ball >= 15.1
+  "First 5 overs"                → WHERE ball <= 4.6
+  "Last 5 overs" (T20)           → WHERE ball >= 15.1
+  "First 10 overs"               → WHERE ball <= 9.6
+  "Specific over N"              → WHERE ball >= (N-1).1 AND ball <= (N-1).6
+
+COUNTING BALLS AND OVERS:
+  - Do NOT use SUM(ball) or ball/6 — ball is NOT a sequential number
+  - Do NOT do arithmetic on the ball column (5.3 + 0.1 ≠ 5.4 in cricket)
+  - ✅ COUNT(*) from fixtures__balls = total balls bowled
+  - ✅ Total overs = CAST(COUNT(*) AS FLOAT) / 6.0
+  - ✅ "After 30 balls" → use a CTE with ROW_NUMBER() or COUNT(*) > 30
+  - ❌ "After 30 balls" → WHERE ball > 5.0 (WRONG — ball is not sequential)
+
+====================================
+2. CRICKET METRICS — SQL FORMULAS
+====================================
+
+BATTING STRIKE RATE:
+  = (total runs scored / total balls faced) × 100
+  ✅ CAST(SUM(score__runs) AS FLOAT) / NULLIF(COUNT(*), 0) * 100
+  ❌ Do NOT use ball column in arithmetic
+  Context: SR ~100 is par, ~130 is good, >150 is aggressive, >200 is explosive
+  Realistic range: 0 to ~400 (anything above 500 is almost certainly wrong)
+
+BATTING AVERAGE:
+  = total runs scored / number of times dismissed
+  ✅ CAST(SUM(score__runs) AS FLOAT) / NULLIF(SUM(CAST(score__out AS INT)), 0)
+  ❌ AVG(score__runs) gives per-ball average, NOT batting average
+  Context: Avg >30 is good, >40 is very good, >50 is elite
+
+BOWLING ECONOMY RATE:
+  = runs conceded per over = (total runs conceded / total balls bowled) × 6
+  ✅ CAST(SUM(b.score__runs) AS FLOAT) * 6.0 / NULLIF(COUNT(*), 0)
+     (from fixtures__balls, counting balls bowled by the bowler)
+  ❌ Do NOT divide by ball column value (ball is decimal format, not count)
+  ❌ Do NOT use runs/overs from bowling table directly without understanding cumulative rows
+  Context: Economy ~6-7 is good in T20, ~8-9 is average, >10 is expensive
+
+BOWLING AVERAGE:
+  = runs conceded / wickets taken
+  ✅ CAST(SUM(b.score__runs) AS FLOAT) / NULLIF(SUM(CAST(b.score__out AS INT)), 0)
+  Context: Bowling avg <20 is elite, <25 is good
+
+BOWLING STRIKE RATE:
+  = balls bowled / wickets taken
+  ✅ CAST(COUNT(*) AS FLOAT) / NULLIF(SUM(CAST(b.score__out AS INT)), 0)
+  Context: Bowling SR <15 is elite (wicket every 2.5 overs)
+
+RUN RATE:
+  = runs scored per over = (total runs / total balls) × 6
+  ✅ CAST(SUM(score__runs) AS FLOAT) * 6.0 / NULLIF(COUNT(*), 0)
+  ❌ Do NOT use score/overs from fixtures__runs — overs is decimal format
+  Context: RR ~8-9 is par in T20, >10 is above average
+
+REQUIRED RUN RATE:
+  = (runs still needed / balls remaining) × 6
+  - runs needed = target - current score
+  - balls remaining = total balls in innings - balls bowled
+  - This is a COMPUTED metric, not stored in a column
+
+DOT BALL PERCENTAGE:
+  = balls with 0 runs / total balls × 100
+  ✅ CAST(SUM(CASE WHEN score__runs = 0 THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(COUNT(*), 0) * 100
+  Context: Dot ball % ~30-40% is typical in T20
+
+BOUNDARY PERCENTAGE:
+  = balls that were 4s or 6s / total balls × 100
+  ✅ CAST(SUM(CASE WHEN score__runs IN (4, 6) THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(COUNT(*), 0) * 100
+
+BOUNDARY COUNT:
+  Fours:  SUM(CASE WHEN score__runs = 4 THEN 1 ELSE 0 END)
+  Sixes:  SUM(CASE WHEN score__runs = 6 THEN 1 ELSE 0 END)
+  Total boundaries: SUM(CASE WHEN score__runs IN (4, 6) THEN 1 ELSE 0 END)
+  ❌ Do NOT use score__runs = 4 to mean "exactly 4 runs from boundaries"
+     score__runs = 4 means 4 runs on that ball (could be boundary or running)
+
+====================================
+3. MATCH STRUCTURE
+====================================
+
+INNINGS:
+  - inning = 1 → team batting FIRST (sets the target)
+  - inning = 2 → team batting SECOND (chasing the target)
+  - The 'inning' column ONLY exists in fixtures__runs
+  - In fixtures__balls, use scoreboard: S1 = bowling team, S2 = batting/chasing team
+
+SCOREBOARD MAPPING (critical for correct filtering):
+  scoreboard = 'S1' in fixtures__balls → this row is from the BOWLING/FIELDING team's perspective
+  scoreboard = 'S2' in fixtures__balls → this row is from the BATTING/CHASING team's perspective
+  S2 in fixtures__balls ≈ inning = 2 in fixtures__runs (chasing innings)
+  S1 in fixtures__balls ≈ inning = 1 in fixtures__runs (first innings batting)
+
+  ❌ Do NOT assume S1 = first innings and S2 = second innings — it depends on context
+  ✅ For "chasing team stats": WHERE scoreboard = 'S2'
+  ✅ For "batting first stats": WHERE scoreboard = 'S1'
+
+T20 FORMAT:
+  - Each team bats for maximum 20 overs (120 balls)
+  - Maximum total score: realistically ~250-300 (record is ~280)
+  - Maximum wickets per innings: 10 (all out)
+  - A team's innings ends when: 10 wickets fall OR 20 overs (120 balls) are completed
+
+POWERPLAY: overs 1-6 (ball 0.1 to 5.6) — fielding restrictions, typically high scoring
+MIDDLE OVERS: overs 7-15 (ball 6.1 to 14.6) — consolidation, spin dominant
+DEATH OVERS: overs 16-20 (ball 15.1 to 19.6) — aggressive batting, yorkers, slower balls
+
+====================================
+4. WICKETS — DIFFERENT MEANINGS
+====================================
+
+⚠️ The word "wickets" means DIFFERENT things in different tables:
+
+fixtures__runs.wickets:
+  = TOTAL WICKETS LOST by the batting team in that innings
+  - wickets = 0 → no wickets lost → 10 wickets IN HAND
+  - wickets = 3 → 3 wickets lost → 7 wickets in hand
+  - wickets = 10 → all out
+  - "with N wickets in hand" → WHERE wickets <= (10 - N)
+  - "with 9 wickets in hand" → WHERE wickets <= 1
+  - "lost 3 or more wickets" → WHERE wickets >= 3
+  - "without losing a wicket" → WHERE wickets = 0
+
+fixtures__bowling.wickets:
+  = WICKETS TAKEN by that specific bowler (cumulative in that match)
+  - wickets = 3 → bowler has taken 3 wickets
+  - This is NOT team wickets, it's individual bowler wickets
+  - "5-wicket haul" → WHERE wickets >= 5
+
+fixtures__balls.score__is_wicket:
+  = Whether a wicket fell on THIS specific ball (0 or 1)
+  - To count total wickets: SUM(CAST(score__is_wicket AS INT))
+
+fixtures__balls.score__out:
+  = Whether the batsman got OUT on this ball (0 or 1)
+  - To count dismissals: SUM(CAST(score__out AS INT))
+  - score__out and score__is_wicket are usually the same but can differ
+    (run outs can dismiss non-striker who isn't the batsman on strike)
+
+====================================
+5. CHASE LOGIC
+====================================
+
+TARGET:
+  = Score set by the team batting first (inning = 1) + 1
+  ✅ SELECT score + 1 FROM fixtures__runs WHERE fixture_id = X AND inning = 1
+  Note: Target = first innings score + 1 (team must EXCEED, not just match)
+
+REQUIRED RUNS:
+  = Target - current score of chasing team
+  - "needing 50 runs" does NOT mean WHERE score > 50
+  - It means: target_score - current_score = 50
+  - This is a runtime calculation, not a stored column
+
+SUCCESSFUL CHASE (team batting second WON):
+  ✅ WHERE r.inning = 2
+     AND r.score > (SELECT TOP 1 score FROM fixtures__runs
+                    WHERE fixture_id = r.fixture_id AND inning = 1)
+  ❌ WHERE score >= 108 (this is NOT a win — must compare to opponent)
+
+FAILED CHASE (team batting second LOST):
+  ✅ WHERE r.inning = 2
+     AND r.score < (SELECT TOP 1 score FROM fixtures__runs
+                    WHERE fixture_id = r.fixture_id AND inning = 1)
+
+WIN BY RUNS (team batting first won):
+  = First innings score - Second innings score
+  ✅ Must compare both innings within the same fixture_id
+
+WIN BY WICKETS (team batting second won):
+  = 10 - wickets lost by chasing team
+  ✅ WHERE r.inning = 2 AND r.score > (first innings score)
+     Then: wickets_in_hand = 10 - r.wickets
+
+WIN PERCENTAGE:
+  = (matches won / total matches) × 100
+  ✅ CAST(COUNT(wins) AS FLOAT) / NULLIF(COUNT(total), 0) * 100
+
+====================================
+6. WHEN TO JOIN vs WHEN NOT TO JOIN
+====================================
+
+⚠️ MOST COMMON ERROR: Unnecessary joins that cause row multiplication.
+fixtures__balls has ~120 rows per match. Joining it with fixtures__bowling
+(~12 rows) or fixtures__runs (2 rows) WITHOUT proper matching inflates
+COUNT(*) and SUM() by 10-60x, producing absurd results.
+
+QUERIES THAT NEED ONLY fixtures__balls (NO JOIN):
+  ✅ Bowler economy rate in a match
+  ✅ Bowler dot balls in a match
+  ✅ Batsman strike rate in a match
+  ✅ Batsman total runs / boundaries / sixes
+  ✅ Team run rate (filter by team__name)
+  ✅ Phase-wise stats (powerplay/death overs)
+  ✅ How many 4s or 6s a player hit
+  ✅ Any per-ball metric filtered by player name
+
+  Example — Bowler economy (NO JOIN):
+  SELECT CAST(SUM(b.score__runs) AS FLOAT) * 6.0 / NULLIF(COUNT(*), 0) AS economy
+  FROM history2.fixtures__balls b
+  WHERE b.bowler__fullname = 'Pat Cummins' AND b.fixture_id = 59282
+
+  Example — Bowler dot balls (NO JOIN):
+  SELECT COUNT(*) AS dot_balls
+  FROM history2.fixtures__balls b
+  WHERE b.bowler__fullname = 'Aiden Markram' AND b.fixture_id = 59282 AND b.score__runs = 0
+
+  Example — Batsman strike rate (NO JOIN):
+  SELECT CAST(SUM(b.score__runs) AS FLOAT) / NULLIF(COUNT(*), 0) * 100 AS strike_rate
+  FROM history2.fixtures__balls b
+  WHERE b.batsman__fullname = 'Virat Kohli' AND b.fixture_id = 59282
+
+QUERIES THAT NEED fixtures__runs (used DIRECTLY, no join to balls):
+  ✅ Team total innings score
+  ✅ Successful chase comparison (inning 1 vs inning 2 scores)
+  ✅ Wickets lost by team in an innings
+  ✅ Average innings score across matches
+
+  Example — Successful chases (fixtures__runs only):
+  SELECT COUNT(DISTINCT r.fixture_id)
+  FROM history2.fixtures__runs r
+  WHERE r.inning = 2 AND r.score > (
+    SELECT TOP 1 score FROM history2.fixtures__runs
+    WHERE fixture_id = r.fixture_id AND inning = 1)
+
+QUERIES THAT ACTUALLY NEED A JOIN (rare):
+  ⚠️ Only join when you need data from BOTH tables that can't be computed from one.
+  - Bowler cumulative wickets (fixtures__bowling.wickets) combined with ball-level data
+  - Batsman innings score (fixtures__batting.score) combined with ball-level data
+  - When you must join, ALWAYS match on BOTH fixture_id AND ball/overs:
+    JOIN fixtures__bowling ON b.fixture_id = bowl.fixture_id AND b.ball = bowl.overs
+    JOIN fixtures__batting ON b.fixture_id = bat.fixture_id AND b.ball = bat.ball
+
+====================================
+7. COMMON SQL PATTERNS (REFERENCE EXAMPLES)
+====================================
+
+-- Pattern: Player batting stats across matches
+SELECT
+    b.batsman__fullname,
+    COUNT(DISTINCT b.fixture_id) AS matches,
+    SUM(b.score__runs) AS total_runs,
+    COUNT(*) AS balls_faced,
+    CAST(SUM(b.score__runs) AS FLOAT) / NULLIF(COUNT(*), 0) * 100 AS strike_rate,
+    SUM(CAST(b.score__out AS INT)) AS dismissals,
+    CAST(SUM(b.score__runs) AS FLOAT) / NULLIF(SUM(CAST(b.score__out AS INT)), 0) AS batting_avg
+FROM history2.fixtures__balls b
+WHERE b.batsman__fullname = 'Player Name'
+GROUP BY b.batsman__fullname
+
+-- Pattern: Bowler stats across matches
+SELECT
+    b.bowler__fullname,
+    COUNT(DISTINCT b.fixture_id) AS matches,
+    SUM(b.score__runs) AS runs_conceded,
+    COUNT(*) AS balls_bowled,
+    CAST(SUM(b.score__runs) AS FLOAT) * 6.0 / NULLIF(COUNT(*), 0) AS economy_rate,
+    SUM(CAST(b.score__out AS INT)) AS wickets_taken
+FROM history2.fixtures__balls b
+WHERE b.bowler__fullname = 'Bowler Name'
+GROUP BY b.bowler__fullname
+
+-- Pattern: Successful chases
+SELECT COUNT(DISTINCT r.fixture_id) AS successful_chases
+FROM history2.fixtures__runs r
+WHERE r.inning = 2
+AND r.score > (SELECT TOP 1 score
+               FROM history2.fixtures__runs
+               WHERE fixture_id = r.fixture_id AND inning = 1)
+
+-- Pattern: Team-specific stats
+SELECT ...
+FROM history2.fixtures__balls b
+WHERE b.team__name = 'Team Name'    -- Use team__name for filtering
+AND b.scoreboard = 'S2'              -- Chasing team
+
+-- Pattern: Per-match aggregation (ALWAYS use this for cross-match stats)
+SELECT b.fixture_id, SUM(b.score__runs) AS match_runs
+FROM history2.fixtures__balls b
+GROUP BY b.fixture_id
+
+-- Pattern: Phase-wise stats (powerplay / middle / death)
+SELECT
+    CASE
+        WHEN b.ball <= 5.6 THEN 'Powerplay'
+        WHEN b.ball >= 6.1 AND b.ball <= 14.6 THEN 'Middle'
+        WHEN b.ball >= 15.1 THEN 'Death'
+    END AS phase,
+    SUM(b.score__runs) AS runs,
+    COUNT(*) AS balls
+FROM history2.fixtures__balls b
+WHERE b.fixture_id = X
+GROUP BY CASE
+    WHEN b.ball <= 5.6 THEN 'Powerplay'
+    WHEN b.ball >= 6.1 AND b.ball <= 14.6 THEN 'Middle'
+    WHEN b.ball >= 15.1 THEN 'Death'
+END
+
+-- Pattern: Batsman stats in a specific phase
+SELECT
+    b.batsman__fullname,
+    SUM(b.score__runs) AS runs,
+    COUNT(*) AS balls,
+    CAST(SUM(b.score__runs) AS FLOAT) / NULLIF(COUNT(*), 0) * 100 AS strike_rate
+FROM history2.fixtures__balls b
+WHERE b.batsman__fullname = 'Player Name'
+AND b.ball >= 15.1  -- Death overs
+GROUP BY b.batsman__fullname
+
+-- Pattern: Matches where team chased 180+
+SELECT COUNT(DISTINCT r2.fixture_id) AS high_chases
+FROM history2.fixtures__runs r1
+JOIN history2.fixtures__runs r2 ON r1.fixture_id = r2.fixture_id
+WHERE r1.inning = 1 AND r1.score >= 180
+AND r2.inning = 2 AND r2.score > r1.score
+
+====================================
+8. COLUMN DISAMBIGUATION
+====================================
+
+"score" means different things:
+  - fixtures__balls.score__runs  → runs on THIS ball (0-6)
+  - fixtures__batting.score      → batsman's total runs in that innings
+  - fixtures__runs.score         → team's total innings score
+  - fixtures__bowling has NO 'score' → use 'runs' for runs conceded
+
+"ball" vs "overs":
+  - fixtures__balls.ball         → ball number in over.ball format (5.3)
+  - fixtures__batting.ball       → ball number
+  - fixtures__bowling.overs      → over number in over.ball format
+  - fixtures__runs.overs         → total overs played (decimal)
+
+"wickets":
+  - fixtures__runs.wickets       → wickets LOST by team (0-10)
+  - fixtures__bowling.wickets    → wickets TAKEN by bowler
+  - fixtures__balls.score__is_wicket → did wicket fall on this ball (0/1)
+  - fixtures__balls.score__out   → did batsman get out on this ball (0/1)
+
+"rate":
+  - fixtures__batting.rate       → batting strike rate
+  - fixtures__bowling.rate       → bowling economy rate
+
+"player_id" vs "batsman_id" vs "bowler_id":
+  - fixtures__batting.player_id  → batsman's ID in batting table
+  - fixtures__bowling.player_id  → bowler's ID in bowling table
+  - fixtures__balls.batsman_id   → batsman's ID in balls table
+  - fixtures__balls.bowler_id    → bowler's ID in balls table
+  - These are DIFFERENT column names for the same concept in different tables
+
+====================================
+9. JOIN GRANULARITY WARNING
+====================================
+
+⚠️ Tables have DIFFERENT row counts per match:
+  - fixtures__balls:   ~120-300 rows per match (one per ball)
+  - fixtures__batting:  ~11-22 rows per match (one per batsman per ball update)
+  - fixtures__bowling:  ~8-16 rows per match (one per bowler per over update)
+  - fixtures__runs:     2 rows per match (one per innings)
+
+NEVER join fixtures__runs with fixtures__balls unless you need ball-level detail:
+  - 2 rows × 120 rows = 240 rows → AVG/COUNT inflated 120x
+  ❌ SELECT AVG(r.score) FROM fixtures__runs r JOIN fixtures__balls b ON r.fixture_id = b.fixture_id
+  ✅ SELECT AVG(r.score) FROM fixtures__runs r WHERE r.inning = 2
+
+If you MUST join, always GROUP BY fixture_id first in a CTE:
+  ✅ WITH match_totals AS (
+       SELECT fixture_id, SUM(score__runs) AS total FROM fixtures__balls GROUP BY fixture_id
+     )
+     SELECT AVG(total) FROM match_totals
+
+====================================
+10. COMMON CRICKET TERMINOLOGY → SQL TRANSLATION
+====================================
+
+"maiden over" → an over where the bowler conceded 0 runs
+  ✅ Group balls by bowler + over, filter WHERE SUM(score__runs) = 0
+
+"duck" → batsman dismissed for 0 runs
+  ✅ WHERE score__out = 1 and total runs by that batsman in that innings = 0
+
+"half-century" / "fifty" → batsman scored 50-99 runs in an innings
+  ✅ Aggregate per batsman per fixture, HAVING SUM(score__runs) BETWEEN 50 AND 99
+
+"century" / "hundred" → batsman scored 100+ runs in an innings
+  ✅ Aggregate per batsman per fixture, HAVING SUM(score__runs) >= 100
+
+"hat-trick" → bowler took 3 wickets on 3 consecutive balls
+  ❌ This is very complex to query — requires ordering by ball and checking consecutive score__out = 1
+
+"extras" / "wides" / "no-balls" → not stored as separate columns in fixtures__balls
+  ❌ Cannot reliably query extras from current schema
+
+"run out" → dismissal type is not separately tracked
+  ❌ score__out = 1 means dismissed, but dismissal TYPE is not available
+
+"net run rate" → (team run rate) - (opponent run rate) across all matches
+  ✅ Compute each team's RR per match, then average the difference
+  This requires CTEs or subqueries
+
+"top order" → batsmen #1 to #3 (not directly available — no batting position column)
+  ❌ Cannot filter by batting position from current schema
+  Workaround: earliest batsmen in each innings by ball number
+
+"finisher" → batsman who bats in death overs (ball >= 15.1)
+  ✅ WHERE ball >= 15.1 AND batsman__fullname = 'Player'

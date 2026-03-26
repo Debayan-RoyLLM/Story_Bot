@@ -137,7 +137,7 @@ def latest_fixture(country_id: int, league_id: int, db: Session = Depends(get_db
 
             from app.services.llm import run_statements, graph, metadata
 
-            statements_output = run_statements(GLOBAL_NARRATIVE, GLOBAL_GAME_STATE, graph, metadata)
+            statements_output = run_statements(GLOBAL_NARRATIVE, GLOBAL_GAME_STATE, graph, metadata, fixture_id=fixture_id)
 
             file_exists = CSV_PATH.exists()
 

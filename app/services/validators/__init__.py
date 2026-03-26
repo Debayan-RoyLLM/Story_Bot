@@ -25,6 +25,7 @@ from app.services.validators.metadata_checks import (
 from app.services.validators.sql_checks import (
     validate_division_safety,
     validate_where_clause,
+    validate_groupby_aggregation,
 )
 
 logger = logging.getLogger(__name__)
@@ -124,6 +125,7 @@ def validate_generated_query(query: str, metadata: dict, question: str,
     all_warnings += _run_warning_check("Unqualified columns", validate_unqualified_columns, query, metadata)
     all_warnings += _run_warning_check("Division safety", validate_division_safety, query)
     all_warnings += _run_warning_check("WHERE clause", validate_where_clause, query)
+    all_warnings += _run_warning_check("GROUP BY aggregation", validate_groupby_aggregation, query, question)
 
     # ── Summary ──────────────────────────────────────────────────
 

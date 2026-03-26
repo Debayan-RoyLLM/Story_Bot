@@ -1,68 +1,3270 @@
 {
+  "history2.fixtures": {
+    "table_summary": "The 'history2.fixtures' table stores information about cricket match fixtures, including details about the teams, league, season, venue, match status, and match results. It serves as a historical record of matches played, their outcomes, and associated metadata, which is essential for analyzing cricket statistics and match history.",
+    "columns": {
+      "id": {
+        "type": "bigint",
+        "description": "Primary key for the fixtures table. This is the same value stored as fixture_id in child tables (fixtures__balls, fixtures__runs, fixtures__bowling, etc.). Use this when querying the fixtures table directly. Example: SELECT id FROM history2.fixtures ORDER BY starting_at DESC",
+        "sample_values": [
+          "26276",
+          "26279"
+        ]
+      },
+      "league_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the league in which the match is played (bigint).",
+        "sample_values": [
+          "258",
+          "282"
+        ]
+      },
+      "season_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the season of the match (bigint).",
+        "sample_values": [
+          "684",
+          "794"
+        ]
+      },
+      "stage_id": {
+        "type": "bigint",
+        "description": "Identifier for the stage of the league (bigint).",
+        "sample_values": [
+          "2645",
+          "2594"
+        ]
+      },
+      "round": {
+        "type": "varchar",
+        "description": "Describes the round of the match (varchar).",
+        "sample_values": [
+          "1st T20I",
+          "2nd T20I"
+        ]
+      },
+      "localteam_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the local team (bigint).",
+        "sample_values": [
+          "81",
+          "1811"
+        ]
+      },
+      "visitorteam_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the visiting team (bigint).",
+        "sample_values": [
+          "1838",
+          "1392"
+        ]
+      },
+      "starting_at": {
+        "type": "datetime",
+        "description": "Date and time when the match starts (datetime).",
+        "sample_values": [
+          "2021-07-26 15:00:00",
+          "2021-07-28 15:00:00"
+        ]
+      },
+      "type": {
+        "type": "varchar",
+        "description": "Type of match (e.g., T20I, ODI) (varchar).",
+        "sample_values": [
+          "T20I",
+          "T10"
+        ]
+      },
+      "live": {
+        "type": "bit",
+        "description": "Indicates if the match is currently live (bit).",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "status": {
+        "type": "varchar",
+        "description": "Current status of the match (e.g., Finished, Aban.) (varchar).",
+        "sample_values": [
+          "Finished",
+          "Aban."
+        ]
+      },
+      "note": {
+        "type": "varchar",
+        "description": "Additional notes about the match outcome (varchar).",
+        "sample_values": [
+          "Netherlands W won by 28 runs",
+          "Match abandoned without a ball bowled"
+        ]
+      },
+      "venue_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the venue where the match is held (bigint).",
+        "sample_values": [
+          "66",
+          "693"
+        ]
+      },
+      "toss_won_team_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the team that won the toss (bigint).",
+        "sample_values": [
+          "1838",
+          "1392"
+        ]
+      },
+      "draw_noresult": {
+        "type": "varchar",
+        "description": "Indicates if the match ended in a draw or no result (varchar).",
+        "sample_values": [
+          "draw",
+          "no-result"
+        ]
+      },
+      "first_umpire_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the first umpire (bigint).",
+        "sample_values": [
+          "2222",
+          "2162"
+        ]
+      },
+      "second_umpire_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the second umpire (bigint).",
+        "sample_values": [
+          "2117",
+          "2222"
+        ]
+      },
+      "tv_umpire_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the TV umpire (bigint).",
+        "sample_values": [
+          "1746",
+          "2162"
+        ]
+      },
+      "referee_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the match referee (bigint).",
+        "sample_values": [
+          "2120",
+          "999"
+        ]
+      },
+      "elected": {
+        "type": "varchar",
+        "description": "Indicates which option (batting or bowling) was elected by the toss-winning team (varchar).",
+        "sample_values": [
+          "batting",
+          "bowling"
+        ]
+      },
+      "super_over": {
+        "type": "bit",
+        "description": "Indicates if a super over was played (bit).",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "follow_on": {
+        "type": "bit",
+        "description": "Indicates if the follow-on rule was applied (bit).",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "league__resource": {
+        "type": "varchar",
+        "description": "Stores the type of resource for the league (varchar).",
+        "sample_values": [
+          "leagues"
+        ]
+      },
+      "league__id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the league (bigint).",
+        "sample_values": [
+          "258",
+          "282"
+        ]
+      },
+      "league__season_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the league's season (bigint).",
+        "sample_values": [
+          "1511",
+          "1232"
+        ]
+      },
+      "league__country_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the country of the league (bigint).",
+        "sample_values": [
+          "99474",
+          "2756"
+        ]
+      },
+      "league__name": {
+        "type": "varchar",
+        "description": "Name of the league (varchar).",
+        "sample_values": [
+          "Twenty20 International Women",
+          "European Cricket Series Malta"
+        ]
+      },
+      "league__code": {
+        "type": "varchar",
+        "description": "Code representing the league (varchar).",
+        "sample_values": [
+          "T20IW",
+          "ECS"
+        ]
+      },
+      "league__image_path": {
+        "type": "varchar",
+        "description": "Path to the league's image (varchar).",
+        "sample_values": [
+          "https://cdn.sportmonks.com/images/cricket/leagues/2/258.png",
+          "https://cdn.sportmonks.com"
+        ]
+      },
+      "league__type": {
+        "type": "varchar",
+        "description": "Type of league (varchar).",
+        "sample_values": [
+          "phase",
+          "league"
+        ]
+      },
+      "league__updated_at": {
+        "type": "datetime",
+        "description": "Timestamp of the last update to league information (datetime).",
+        "sample_values": [
+          "2024-01-06 13:55:25",
+          "2023-01-19 16:47:18"
+        ]
+      },
+      "season__resource": {
+        "type": "varchar",
+        "description": "Stores the type of resource for the season (varchar).",
+        "sample_values": [
+          "seasons"
+        ]
+      },
+      "season__id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the season (bigint).",
+        "sample_values": [
+          "684",
+          "794"
+        ]
+      },
+      "season__league_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the league of the season (bigint).",
+        "sample_values": [
+          "258",
+          "282"
+        ]
+      },
+      "season__name": {
+        "type": "varchar",
+        "description": "Name of the season (varchar).",
+        "sample_values": [
+          "2021",
+          "2021/2022"
+        ]
+      },
+      "season__code": {
+        "type": "varchar",
+        "description": "Code representing the season (varchar).",
+        "sample_values": [
+          "2021",
+          "2021/2022"
+        ]
+      },
+      "season__updated_at": {
+        "type": "datetime",
+        "description": "Timestamp of the last update to season information (datetime).",
+        "sample_values": [
+          "2020-12-16 12:34:15",
+          "2021-06-04 15:17:23"
+        ]
+      },
+      "localteam__resource": {
+        "type": "varchar",
+        "description": "Stores the type of resource for the local team (varchar).",
+        "sample_values": [
+          "teams"
+        ]
+      },
+      "localteam__id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the local team (bigint).",
+        "sample_values": [
+          "81",
+          "1811"
+        ]
+      },
+      "localteam__name": {
+        "type": "varchar",
+        "description": "Name of the local team (varchar).",
+        "sample_values": [
+          "Ireland W",
+          "Swieqi United"
+        ]
+      },
+      "localteam__code": {
+        "type": "varchar",
+        "description": "Code representing the local team (varchar).",
+        "sample_values": [
+          "IRE",
+          "SU"
+        ]
+      },
+      "localteam__image_path": {
+        "type": "varchar",
+        "description": "Path to the local team's image (varchar).",
+        "sample_values": [
+          "https://cdn.sportmonks.com/images/cricket/teams/17/81.png",
+          "https://cdn.sportmonks.com/images/cricket/teams/19/1811.png"
+        ]
+      },
+      "localteam__country_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the country of the local team (bigint).",
+        "sample_values": [
+          "190324",
+          "2756"
+        ]
+      },
+      "localteam__national_team": {
+        "type": "bit",
+        "description": "Indicates if the local team is a national team (bit).",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "localteam__updated_at": {
+        "type": "datetime",
+        "description": "Timestamp of the last update to local team information (datetime).",
+        "sample_values": [
+          "2018-11-13 21:18:14",
+          "2021-06-08 09:40:59"
+        ]
+      },
+      "visitorteam__resource": {
+        "type": "varchar",
+        "description": "Stores the type of resource for the visiting team (varchar).",
+        "sample_values": [
+          "teams"
+        ]
+      },
+      "visitorteam__id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the visiting team (bigint).",
+        "sample_values": [
+          "1838",
+          "1392"
+        ]
+      },
+      "visitorteam__name": {
+        "type": "varchar",
+        "description": "Name of the visiting team (varchar).",
+        "sample_values": [
+          "Netherlands W",
+          "Overseas CC"
+        ]
+      },
+      "visitorteam__code": {
+        "type": "varchar",
+        "description": "Code representing the visiting team (varchar).",
+        "sample_values": [
+          "NLD",
+          "OVR"
+        ]
+      },
+      "visitorteam__image_path": {
+        "type": "varchar",
+        "description": "Path to the visiting team's image (varchar).",
+        "sample_values": [
+          "https://cdn.sportmonks.com/images/cricket/teams/14/1838.png",
+          "https://cdn.sportmonks.com/images/cricket/teams/16/1392.png"
+        ]
+      },
+      "visitorteam__country_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the country of the visiting team (bigint).",
+        "sample_values": [
+          "190324",
+          "2756"
+        ]
+      },
+      "visitorteam__national_team": {
+        "type": "bit",
+        "description": "Indicates if the visiting team is a national team (bit).",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "visitorteam__updated_at": {
+        "type": "datetime",
+        "description": "Timestamp of the last update to visiting team information (datetime).",
+        "sample_values": [
+          "2023-08-17 11:51:34",
+          "2020-11-17 12:23:26"
+        ]
+      },
+      "tosswon__resource": {
+        "type": "varchar",
+        "description": "Stores the type of resource for the team that won the toss (varchar).",
+        "sample_values": [
+          "teams"
+        ]
+      },
+      "tosswon__id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the team that won the toss (bigint).",
+        "sample_values": [
+          "1838",
+          "1392"
+        ]
+      },
+      "tosswon__name": {
+        "type": "varchar",
+        "description": "Name of the team that won the toss (varchar).",
+        "sample_values": [
+          "Netherlands W",
+          "Overseas CC"
+        ]
+      },
+      "tosswon__code": {
+        "type": "varchar",
+        "description": "Code representing the team that won the toss (varchar).",
+        "sample_values": [
+          "NLD",
+          "OVR"
+        ]
+      },
+      "tosswon__image_path": {
+        "type": "varchar",
+        "description": "Path to the image of the team that won the toss (varchar).",
+        "sample_values": [
+          "https://cdn.sportmonks.com/images/cricket/teams/14/1838.png",
+          "https://cdn.sportmonks.com/images/cricket/teams/16/1392.png"
+        ]
+      },
+      "tosswon__country_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the country of the toss-winning team (bigint).",
+        "sample_values": [
+          "190324",
+          "2756"
+        ]
+      },
+      "tosswon__national_team": {
+        "type": "bit",
+        "description": "Indicates if the toss-winning team is a national team (bit).",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "tosswon__updated_at": {
+        "type": "datetime",
+        "description": "Timestamp of the last update to toss-winning team information (datetime).",
+        "sample_values": [
+          "2023-08-17 11:51:34",
+          "2020-11-17 12:23:26"
+        ]
+      },
+      "venue__resource": {
+        "type": "varchar",
+        "description": "Stores the type of resource for the venue (varchar).",
+        "sample_values": [
+          "venues"
+        ]
+      },
+      "venue__id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the venue (bigint).",
+        "sample_values": [
+          "66",
+          "693"
+        ]
+      },
+      "venue__country_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the country of the venue (bigint).",
+        "sample_values": [
+          "14566098",
+          "2756"
+        ]
+      },
+      "venue__name": {
+        "type": "varchar",
+        "description": "Name of the venue (varchar).",
+        "sample_values": [
+          "The Village",
+          "Marsa Sports Club"
+        ]
+      },
+      "venue__city": {
+        "type": "varchar",
+        "description": "City where the venue is located (varchar).",
+        "sample_values": [
+          "Dublin",
+          "Malta"
+        ]
+      },
+      "venue__image_path": {
+        "type": "varchar",
+        "description": "Path to the venue's image (varchar).",
+        "sample_values": [
+          "https://cdn.sportmonks.com/images/cricket/venues/2/66.png",
+          "https://cdn.sportmonks.com"
+        ]
+      },
+      "venue__capacity": {
+        "type": "bigint",
+        "description": "Seating capacity of the venue (bigint).",
+        "sample_values": [
+          "11500",
+          "5000"
+        ]
+      },
+      "venue__floodlight": {
+        "type": "bit",
+        "description": "Indicates if the venue has floodlights (bit).",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "venue__updated_at": {
+        "type": "datetime",
+        "description": "Timestamp of the last update to venue information (datetime).",
+        "sample_values": [
+          "2018-11-14 17:42:20",
+          "2020-11-24 08:10:35"
+        ]
+      },
+      "winner_team_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the winning team (bigint).",
+        "sample_values": [
+          "1838",
+          "81"
+        ]
+      },
+      "man_of_match_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the player awarded 'Man of the Match' (bigint).",
+        "sample_values": [
+          "524",
+          "23577"
+        ]
+      },
+      "manofmatch__resource": {
+        "type": "varchar",
+        "description": "Stores the type of resource for the player who is 'Man of the Match' (varchar).",
+        "sample_values": [
+          "players"
+        ]
+      },
+      "manofmatch__id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the 'Man of the Match' player (bigint).",
+        "sample_values": [
+          "524",
+          "23577"
+        ]
+      },
+      "manofmatch__country_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the country of the 'Man of the Match' player (bigint).",
+        "sample_values": [
+          "14566098",
+          "2756"
+        ]
+      },
+      "manofmatch__firstname": {
+        "type": "varchar",
+        "description": "First name of the 'Man of the Match' player (varchar).",
+        "sample_values": [
+          "Laura",
+          "Clyde"
+        ]
+      },
+      "manofmatch__lastname": {
+        "type": "varchar",
+        "description": "Last name of the 'Man of the Match' player (varchar).",
+        "sample_values": [
+          "Delany",
+          "Palmer"
+        ]
+      },
+      "manofmatch__fullname": {
+        "type": "varchar",
+        "description": "Full name of the 'Man of the Match' player (varchar).",
+        "sample_values": [
+          "Laura Delany",
+          "Clyde Palmer"
+        ]
+      },
+      "manofmatch__image_path": {
+        "type": "varchar",
+        "description": "Path to the 'Man of the Match' player's image (varchar).",
+        "sample_values": [
+          "https://cdn.sportmonks.com/images/cricket/players/12/524.png",
+          "https://cdn.sportmonks.com/images/cricket/placeholder.png"
+        ]
+      },
+      "manofmatch__dateofbirth": {
+        "type": "varchar",
+        "description": "Date of birth of the 'Man of the Match' player (varchar).",
+        "sample_values": [
+          "1992-12-23",
+          "1982-05-12"
+        ]
+      },
+      "manofmatch__gender": {
+        "type": "varchar",
+        "description": "Gender of the 'Man of the Match' player (varchar).",
+        "sample_values": [
+          "f",
+          "m"
+        ]
+      },
+      "manofmatch__battingstyle": {
+        "type": "varchar",
+        "description": "Batting style of the 'Man of the Match' player (varchar).",
+        "sample_values": [
+          "right-hand-bat",
+          "left-hand-bat"
+        ]
+      },
+      "manofmatch__bowlingstyle": {
+        "type": "varchar",
+        "description": "Bowling style of the 'Man of the Match' player (varchar).",
+        "sample_values": [
+          "right-arm-fast-medium",
+          "right-arm-offbreak"
+        ]
+      },
+      "manofmatch__position__resource": {
+        "type": "varchar",
+        "description": "Stores the type of resource for the position of the 'Man of the Match' player (varchar).",
+        "sample_values": [
+          "positions"
+        ]
+      },
+      "manofmatch__position__id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the position of the 'Man of the Match' player (bigint).",
+        "sample_values": [
+          "2",
+          "3"
+        ]
+      },
+      "manofmatch__position__name": {
+        "type": "varchar",
+        "description": "Name of the position of the 'Man of the Match' player (varchar).",
+        "sample_values": [
+          "Bowler",
+          "Wicketkeeper"
+        ]
+      },
+      "manofmatch__updated_at": {
+        "type": "datetime",
+        "description": "Timestamp of the last update to 'Man of the Match' player information (datetime).",
+        "sample_values": [
+          "2020-04-04 04:43:31",
+          "2021-06-14 09:33:50"
+        ]
+      },
+      "man_of_series_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the player awarded 'Man of the Series' (bigint).",
+        "sample_values": [
+          "9363",
+          "9999"
+        ]
+      },
+      "manofseries__resource": {
+        "type": "varchar",
+        "description": "Stores the type of resource for the player who is 'Man of the Series' (varchar).",
+        "sample_values": [
+          "players"
+        ]
+      },
+      "manofseries__id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the 'Man of the Series' player (bigint).",
+        "sample_values": [
+          "9363",
+          "9999"
+        ]
+      },
+      "manofseries__country_id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the country of the 'Man of the Series' player (bigint).",
+        "sample_values": [
+          "155043",
+          "2325"
+        ]
+      },
+      "manofseries__firstname": {
+        "type": "varchar",
+        "description": "First name of the 'Man of the Series' player (varchar).",
+        "sample_values": [
+          "Nasum",
+          "Milton"
+        ]
+      },
+      "manofseries__lastname": {
+        "type": "varchar",
+        "description": "Last name of the 'Man of the Series' player (varchar).",
+        "sample_values": [
+          "Ahmed",
+          "Shumba"
+        ]
+      },
+      "manofseries__fullname": {
+        "type": "varchar",
+        "description": "Full name of the 'Man of the Series' player (varchar).",
+        "sample_values": [
+          "Nasum Ahmed",
+          "Milton Shumba"
+        ]
+      },
+      "manofseries__image_path": {
+        "type": "varchar",
+        "description": "Path to the 'Man of the Series' player's image (varchar).",
+        "sample_values": [
+          "https://cdn.sportmonks.com/images/cricket/players/19/9363.png",
+          "https://cdn.sportmonks.com/images/cricket/players/15/9999.png"
+        ]
+      },
+      "manofseries__dateofbirth": {
+        "type": "varchar",
+        "description": "Date of birth of the 'Man of the Series' player (varchar).",
+        "sample_values": [
+          "1994-12-05",
+          "2000-10-19"
+        ]
+      },
+      "manofseries__gender": {
+        "type": "varchar",
+        "description": "Gender of the 'Man of the Series' player (varchar).",
+        "sample_values": [
+          "f",
+          "m"
+        ]
+      },
+      "manofseries__battingstyle": {
+        "type": "varchar",
+        "description": "Batting style of the 'Man of the Series' player (varchar).",
+        "sample_values": [
+          "left-hand-bat",
+          "right-hand-bat"
+        ]
+      },
+      "manofseries__bowlingstyle": {
+        "type": "varchar",
+        "description": "Bowling style of the 'Man of the Series' player (varchar).",
+        "sample_values": [
+          "slow-left-arm-orthodox",
+          "right-arm-offbreak"
+        ]
+      },
+      "manofseries__position__resource": {
+        "type": "varchar",
+        "description": "Stores the type of resource for the position of the 'Man of the Series' player (varchar).",
+        "sample_values": [
+          "positions"
+        ]
+      },
+      "manofseries__position__id": {
+        "type": "bigint",
+        "description": "Foreign key referencing the position of the 'Man of the Series' player (bigint).",
+        "sample_values": [
+          "2",
+          "1"
+        ]
+      },
+      "manofseries__position__name": {
+        "type": "varchar",
+        "description": "Name of the position of the 'Man of the Series' player (varchar).",
+        "sample_values": [
+          "Bowler",
+          "Batsman"
+        ]
+      },
+      "manofseries__updated_at": {
+        "type": "datetime",
+        "description": "Timestamp of the last update to 'Man of the Series' player information (datetime).",
+        "sample_values": [
+          "2021-11-02 20:17:22",
+          "2020-04-05 05:51:32"
+        ]
+      },
+      "total_overs_played": {
+        "type": "bigint",
+        "description": "Total overs played in the match (bigint).",
+        "sample_values": [
+          "20",
+          "15"
+        ]
+      },
+      "localteam_dl_data__score": {
+        "type": "varchar",
+        "description": "Score data for the local team in D/L method (varchar).",
+        "sample_values": [
+          "117",
+          "110"
+        ]
+      },
+      "localteam_dl_data__overs": {
+        "type": "varchar",
+        "description": "Overs data for the local team in D/L method (varchar).",
+        "sample_values": [
+          "15",
+          "18"
+        ]
+      },
+      "localteam_dl_data__wickets_out": {
+        "type": "varchar",
+        "description": "Wickets lost by the local team in D/L method (varchar).",
+        "sample_values": [
+          "2",
+          "6"
+        ]
+      },
+      "visitorteam_dl_data__score": {
+        "type": "varchar",
+        "description": "Score data for the visiting team in D/L method (varchar).",
+        "sample_values": [
+          "118",
+          "103"
+        ]
+      },
+      "visitorteam_dl_data__overs": {
+        "type": "varchar",
+        "description": "Overs data for the visiting team in D/L method (varchar).",
+        "sample_values": [
+          "13.3",
+          "18"
+        ]
+      },
+      "visitorteam_dl_data__wickets_out": {
+        "type": "varchar",
+        "description": "Wickets lost by the visiting team in D/L method (varchar).",
+        "sample_values": [
+          "3",
+          "6"
+        ]
+      },
+      "rpc_overs": {
+        "type": "varchar",
+        "description": "Overs for the revised target (varchar).",
+        "sample_values": [
+          "15",
+          "18"
+        ]
+      },
+      "rpc_target": {
+        "type": "varchar",
+        "description": "Revised target score (varchar).",
+        "sample_values": [
+          "118",
+          "111"
+        ]
+      },
+      "visitorteam_dl_data__total_overs_played": {
+        "type": "varchar",
+        "description": "Total overs played by the visiting team in D/L method (varchar).",
+        "sample_values": [
+          "20",
+          "50"
+        ]
+      },
+      "localteam_dl_data__rpc_overs": {
+        "type": "varchar",
+        "description": "Revised overs for the local team in D/L method (varchar).",
+        "sample_values": [
+          "6",
+          "22"
+        ]
+      },
+      "localteam_dl_data__rpc_targets": {
+        "type": "varchar",
+        "description": "Revised target for the local team in D/L method (varchar).",
+        "sample_values": [
+          "60",
+          "102"
+        ]
+      },
+      "\u274c NO 'fixture_id'": "The primary key in fixtures table is 'id', NOT 'fixture_id'. Use: SELECT id FROM history2.fixtures. Other tables reference it AS fixture_id, but in this table it is just 'id'."
+    },
+    "sample_rows": [
+      {
+        "league_id": "258",
+        "season_id": "684",
+        "stage_id": "2645",
+        "round": "1st T20I",
+        "localteam_id": "81",
+        "visitorteam_id": "1838",
+        "starting_at": "2021-07-26 15:00:00",
+        "type": "T20I",
+        "live": "True",
+        "status": "Finished",
+        "note": "Netherlands W won by 28 runs",
+        "venue_id": "66",
+        "toss_won_team_id": "1838",
+        "draw_noresult": "None",
+        "first_umpire_id": "2222",
+        "second_umpire_id": "2117",
+        "tv_umpire_id": "None",
+        "referee_id": "2120",
+        "elected": "bowling",
+        "super_over": "False",
+        "follow_on": "False",
+        "league__resource": "leagues",
+        "league__id": "258",
+        "league__season_id": "1511",
+        "league__country_id": "99474",
+        "league__name": "Twenty20 International Women",
+        "league__code": "T20IW",
+        "league__image_path": "https://cdn.sportmonks.com/images/cricket/leagues/2/258.png",
+        "league__type": "phase",
+        "league__updated_at": "2024-01-06 13:55:25",
+        "season__resource": "seasons",
+        "season__id": "684",
+        "season__league_id": "258",
+        "season__name": "2021",
+        "season__code": "2021",
+        "season__updated_at": "2020-12-16 12:34:15",
+        "localteam__resource": "teams",
+        "localteam__id": "81",
+        "localteam__name": "Ireland W",
+        "localteam__code": "IRE",
+        "localteam__image_path": "https://cdn.sportmonks.com/images/cricket/teams/17/81.png",
+        "localteam__country_id": "190324",
+        "localteam__national_team": "True",
+        "localteam__updated_at": "2018-11-13 21:18:14",
+        "visitorteam__resource": "teams",
+        "visitorteam__id": "1838",
+        "visitorteam__name": "Netherlands W",
+        "visitorteam__code": "NLD",
+        "visitorteam__image_path": "https://cdn.sportmonks.com/images/cricket/teams/14/1838.png",
+        "visitorteam__country_id": "190324",
+        "visitorteam__national_team": "False",
+        "visitorteam__updated_at": "2023-08-17 11:51:34",
+        "tosswon__resource": "teams",
+        "tosswon__id": "1838",
+        "tosswon__name": "Netherlands W",
+        "tosswon__code": "NLD",
+        "tosswon__image_path": "https://cdn.sportmonks.com/images/cricket/teams/14/1838.png",
+        "tosswon__country_id": "190324",
+        "tosswon__national_team": "False",
+        "tosswon__updated_at": "2023-08-17 11:51:34",
+        "venue__resource": "venues",
+        "venue__id": "66",
+        "venue__country_id": "14566098",
+        "venue__name": "The Village",
+        "venue__city": "Dublin",
+        "venue__image_path": "https://cdn.sportmonks.com/images/cricket/venues/2/66.png",
+        "venue__capacity": "11500",
+        "venue__floodlight": "True",
+        "venue__updated_at": "2018-11-14 17:42:20",
+        "winner_team_id": "1838",
+        "man_of_match_id": "524",
+        "manofmatch__resource": "players",
+        "manofmatch__id": "524",
+        "manofmatch__country_id": "14566098",
+        "manofmatch__firstname": "Laura",
+        "manofmatch__lastname": "Delany",
+        "manofmatch__fullname": "Laura Delany",
+        "manofmatch__image_path": "https://cdn.sportmonks.com/images/cricket/players/12/524.png",
+        "manofmatch__dateofbirth": "1992-12-23",
+        "manofmatch__gender": "f",
+        "manofmatch__battingstyle": "right-hand-bat",
+        "manofmatch__bowlingstyle": "right-arm-fast-medium",
+        "manofmatch__position__resource": "positions",
+        "manofmatch__position__id": "2",
+        "manofmatch__position__name": "Bowler",
+        "manofmatch__updated_at": "2020-04-04 04:43:31",
+        "man_of_series_id": "None",
+        "manofseries__resource": "None",
+        "manofseries__id": "None",
+        "manofseries__country_id": "None",
+        "manofseries__firstname": "None",
+        "manofseries__lastname": "None",
+        "manofseries__fullname": "None",
+        "manofseries__image_path": "None",
+        "manofseries__dateofbirth": "None",
+        "manofseries__gender": "None",
+        "manofseries__battingstyle": "None",
+        "manofseries__bowlingstyle": "None",
+        "manofseries__position__resource": "None",
+        "manofseries__position__id": "None",
+        "manofseries__position__name": "None",
+        "manofseries__updated_at": "None",
+        "total_overs_played": "20",
+        "localteam_dl_data__score": "None",
+        "localteam_dl_data__overs": "None",
+        "localteam_dl_data__wickets_out": "None",
+        "visitorteam_dl_data__score": "None",
+        "visitorteam_dl_data__overs": "None",
+        "visitorteam_dl_data__wickets_out": "None",
+        "rpc_overs": "None",
+        "rpc_target": "None",
+        "visitorteam_dl_data__total_overs_played": "None",
+        "localteam_dl_data__rpc_overs": "None",
+        "localteam_dl_data__rpc_targets": "None"
+      },
+      {
+        "league_id": "258",
+        "season_id": "684",
+        "stage_id": "2645",
+        "round": "2nd T20I",
+        "localteam_id": "81",
+        "visitorteam_id": "1838",
+        "starting_at": "2021-07-28 15:00:00",
+        "type": "T20I",
+        "live": "True",
+        "status": "Aban.",
+        "note": "Match abandoned without a ball bowled",
+        "venue_id": "66",
+        "toss_won_team_id": "None",
+        "draw_noresult": "no-result",
+        "first_umpire_id": "None",
+        "second_umpire_id": "None",
+        "tv_umpire_id": "None",
+        "referee_id": "None",
+        "elected": "None",
+        "super_over": "False",
+        "follow_on": "False",
+        "league__resource": "leagues",
+        "league__id": "258",
+        "league__season_id": "1511",
+        "league__country_id": "99474",
+        "league__name": "Twenty20 International Women",
+        "league__code": "T20IW",
+        "league__image_path": "https://cdn.sportmonks.com/images/cricket/leagues/2/258.png",
+        "league__type": "phase",
+        "league__updated_at": "2024-01-06 13:55:25",
+        "season__resource": "seasons",
+        "season__id": "684",
+        "season__league_id": "258",
+        "season__name": "2021",
+        "season__code": "2021",
+        "season__updated_at": "2020-12-16 12:34:15",
+        "localteam__resource": "teams",
+        "localteam__id": "81",
+        "localteam__name": "Ireland W",
+        "localteam__code": "IRE",
+        "localteam__image_path": "https://cdn.sportmonks.com/images/cricket/teams/17/81.png",
+        "localteam__country_id": "190324",
+        "localteam__national_team": "True",
+        "localteam__updated_at": "2018-11-13 21:18:14",
+        "visitorteam__resource": "teams",
+        "visitorteam__id": "1838",
+        "visitorteam__name": "Netherlands W",
+        "visitorteam__code": "NLD",
+        "visitorteam__image_path": "https://cdn.sportmonks.com/images/cricket/teams/14/1838.png",
+        "visitorteam__country_id": "190324",
+        "visitorteam__national_team": "False",
+        "visitorteam__updated_at": "2023-08-17 11:51:34",
+        "tosswon__resource": "None",
+        "tosswon__id": "None",
+        "tosswon__name": "None",
+        "tosswon__code": "None",
+        "tosswon__image_path": "None",
+        "tosswon__country_id": "None",
+        "tosswon__national_team": "None",
+        "tosswon__updated_at": "None",
+        "venue__resource": "venues",
+        "venue__id": "66",
+        "venue__country_id": "14566098",
+        "venue__name": "The Village",
+        "venue__city": "Dublin",
+        "venue__image_path": "https://cdn.sportmonks.com/images/cricket/venues/2/66.png",
+        "venue__capacity": "11500",
+        "venue__floodlight": "True",
+        "venue__updated_at": "2018-11-14 17:42:20",
+        "winner_team_id": "None",
+        "man_of_match_id": "None",
+        "manofmatch__resource": "None",
+        "manofmatch__id": "None",
+        "manofmatch__country_id": "None",
+        "manofmatch__firstname": "None",
+        "manofmatch__lastname": "None",
+        "manofmatch__fullname": "None",
+        "manofmatch__image_path": "None",
+        "manofmatch__dateofbirth": "None",
+        "manofmatch__gender": "None",
+        "manofmatch__battingstyle": "None",
+        "manofmatch__bowlingstyle": "None",
+        "manofmatch__position__resource": "None",
+        "manofmatch__position__id": "None",
+        "manofmatch__position__name": "None",
+        "manofmatch__updated_at": "None",
+        "man_of_series_id": "None",
+        "manofseries__resource": "None",
+        "manofseries__id": "None",
+        "manofseries__country_id": "None",
+        "manofseries__firstname": "None",
+        "manofseries__lastname": "None",
+        "manofseries__fullname": "None",
+        "manofseries__image_path": "None",
+        "manofseries__dateofbirth": "None",
+        "manofseries__gender": "None",
+        "manofseries__battingstyle": "None",
+        "manofseries__bowlingstyle": "None",
+        "manofseries__position__resource": "None",
+        "manofseries__position__id": "None",
+        "manofseries__position__name": "None",
+        "manofseries__updated_at": "None",
+        "total_overs_played": "None",
+        "localteam_dl_data__score": "None",
+        "localteam_dl_data__overs": "None",
+        "localteam_dl_data__wickets_out": "None",
+        "visitorteam_dl_data__score": "None",
+        "visitorteam_dl_data__overs": "None",
+        "visitorteam_dl_data__wickets_out": "None",
+        "rpc_overs": "None",
+        "rpc_target": "None",
+        "visitorteam_dl_data__total_overs_played": "None",
+        "localteam_dl_data__rpc_overs": "None",
+        "localteam_dl_data__rpc_targets": "None"
+      }
+    ]
+  },
   "history2.fixtures__balls": {
-    "fixture_id": "Unique identifier of the cricket match.",
-    "team_id": "⚠️ NUMERIC team identifier (single underscore). Same as team__id but preferred for JOINs with other tables.",
-    "team__id": "⚠️ NUMERIC team identifier (double underscore). Use team_id instead for consistency with other tables.",
-    "scoreboard": "Choose S1 for Bowling team and S2 for Batting/Chasing team.",
-    "batsman_id": "Unique identifier of batsman at striker end.",
-    "bowler_id": "Unique identifier of the bowler. ⚠️ Use bowler_id NOT bowler__id for filtering.",
-    "bowler__id": "Bowler ID (double underscore variant). Prefer bowler_id for consistency.",
-    "batsman__fullname": "Batsman name (ONLY exists in fixtures__balls)",
-    "bowler__fullname": "Bowler name (ONLY exists in fixtures__balls)",
-    "ball": "Ball number in the innings (decimal format, e.g., 5.3 for 5th over, 3rd ball).",
-    "score__runs": "Runs scored on this ball (0-6+). ⚠️ NOT 'score' or 'runs'",
-    "score__is_wicket": "Indicates if wicket fell (0 or 1). ⚠️ NOT 'is_wicket'",
-    "score__out": "Indicates if batsman got out on this ball (0 or 1). Use for wicket counting.",
-    "batsman_one_on_creeze_id": "Striker batsman ID.",
-    "batsman_two_on_creeze_id": "Non-striker batsman ID.",
-    "team__name": "Team name string. Use for display, NOT for filtering (use team_id or scoreboard instead).",
-    "❌ NO 'score'": "Use score__runs in this table",
-    "❌ NO 'overs'": "Use ball instead, or join to fixtures__runs for overs",
-    "❌ NO 'wickets'": "Use score__is_wicket or score__out for individual balls, or join to fixtures__runs for total",
-    "❌ NO 'runs'": "Use score__runs in this table"
+    "table_summary": "This table stores detailed information about each ball bowled in a cricket match, including the players involved (batsman and bowler), the score resulting from the ball, and various metadata related to the match and players. It is essential for analyzing ball-by-ball performance and statistics in cricket.",
+    "columns": {
+      "fixture_id": {
+        "type": "bigint",
+        "description": "References the match fixture (bigint). This is a foreign key linking to the fixtures table, indicating which match the ball belongs to.",
+        "sample_values": [
+          "10183",
+          "10219"
+        ]
+      },
+      "team_id": {
+        "type": "bigint",
+        "description": "Identifies the team that bowled the ball (bigint). This is a foreign key linking to the teams table.",
+        "sample_values": [
+          "343",
+          "61"
+        ]
+      },
+      "ball": {
+        "type": "real",
+        "description": "Represents the specific ball in decimal format (real), indicating the over and ball number (e.g., 6.5 for the 6th over, 5th ball).",
+        "sample_values": [
+          "6.599999904632568",
+          "7.099999904632568"
+        ]
+      },
+      "scoreboard": {
+        "type": "varchar",
+        "description": "Indicates the scoreboard designation (varchar), where 'S1' represents the bowling team and 'S2' the batting team.",
+        "sample_values": [
+          "S2",
+          "S1"
+        ]
+      },
+      "batsman_id": {
+        "type": "bigint",
+        "description": "References the batsman facing the ball (bigint). This is a foreign key linking to the players table.",
+        "sample_values": [
+          "5711",
+          "181"
+        ]
+      },
+      "bowler_id": {
+        "type": "bigint",
+        "description": "References the bowler delivering the ball (bigint). This is a foreign key linking to the players table.",
+        "sample_values": [
+          "175",
+          "4232"
+        ]
+      },
+      "score_id": {
+        "type": "bigint",
+        "description": "References the score record for the ball (bigint). This is a foreign key linking to the scores table, which details the outcome of the ball.",
+        "sample_values": [
+          "82",
+          "69"
+        ]
+      },
+      "batsman__resource": {
+        "type": "varchar",
+        "description": "Stores the type of resource for the batsman, which is 'players' (varchar).",
+        "sample_values": [
+          "players"
+        ]
+      },
+      "batsman__id": {
+        "type": "bigint",
+        "description": "Unique identifier for the batsman (bigint). This is a foreign key linking to the players table.",
+        "sample_values": [
+          "5711",
+          "181"
+        ]
+      },
+      "batsman__country_id": {
+        "type": "bigint",
+        "description": "References the country of the batsman (bigint). This is a foreign key linking to the countries table.",
+        "sample_values": [
+          "38404",
+          "146"
+        ]
+      },
+      "batsman__firstname": {
+        "type": "varchar",
+        "description": "First name of the batsman (varchar).",
+        "sample_values": [
+          "Oshada",
+          "Niroshan"
+        ]
+      },
+      "batsman__lastname": {
+        "type": "varchar",
+        "description": "Last name of the batsman (varchar).",
+        "sample_values": [
+          "Fernando",
+          "Dickwella"
+        ]
+      },
+      "batsman__fullname": {
+        "type": "varchar",
+        "description": "Full name of the batsman (varchar).",
+        "sample_values": [
+          "Oshada Fernando",
+          "Niroshan Dickwella"
+        ]
+      },
+      "batsman__image_path": {
+        "type": "varchar",
+        "description": "URL to the batsman's image (varchar).",
+        "sample_values": [
+          "https://cdn.sportmonks.com/images/cricket/players/15/5711.png",
+          "https://cdn.sportmonks.com/images/cricket/players/21/181.png"
+        ]
+      },
+      "batsman__dateofbirth": {
+        "type": "varchar",
+        "description": "Date of birth of the batsman (varchar).",
+        "sample_values": [
+          "1992-04-15",
+          "1993-06-23"
+        ]
+      },
+      "batsman__gender": {
+        "type": "varchar",
+        "description": "Gender of the batsman (varchar).",
+        "sample_values": [
+          "f",
+          "m"
+        ]
+      },
+      "batsman__battingstyle": {
+        "type": "varchar",
+        "description": "Batting style of the batsman (varchar).",
+        "sample_values": [
+          "left-hand-bat",
+          "right-hand-bat"
+        ]
+      },
+      "batsman__bowlingstyle": {
+        "type": "varchar",
+        "description": "Bowling style of the batsman (varchar).",
+        "sample_values": [
+          "legbreak",
+          "right-arm-fast-medium"
+        ]
+      },
+      "batsman__position__resource": {
+        "type": "varchar",
+        "description": "Stores the type of resource for the batsman's position (varchar).",
+        "sample_values": [
+          "positions"
+        ]
+      },
+      "batsman__position__id": {
+        "type": "bigint",
+        "description": "Identifier for the batsman's position (bigint).",
+        "sample_values": [
+          "1",
+          "4"
+        ]
+      },
+      "batsman__position__name": {
+        "type": "varchar",
+        "description": "Name of the batsman's position (varchar).",
+        "sample_values": [
+          "Batsman",
+          "Wicketkeeper"
+        ]
+      },
+      "batsman__updated_at": {
+        "type": "datetime",
+        "description": "Timestamp of the last update to the batsman's record (datetime).",
+        "sample_values": [
+          "2020-04-06 05:37:26",
+          "2020-04-06 05:18:34"
+        ]
+      },
+      "bowler__resource": {
+        "type": "varchar",
+        "description": "Stores the type of resource for the bowler, which is 'players' (varchar).",
+        "sample_values": [
+          "players"
+        ]
+      },
+      "bowler__id": {
+        "type": "bigint",
+        "description": "Unique identifier for the bowler (bigint). This is a foreign key linking to the players table.",
+        "sample_values": [
+          "175",
+          "4232"
+        ]
+      },
+      "bowler__country_id": {
+        "type": "bigint",
+        "description": "References the country of the bowler (bigint). This is a foreign key linking to the countries table.",
+        "sample_values": [
+          "38404",
+          "146"
+        ]
+      },
+      "bowler__firstname": {
+        "type": "varchar",
+        "description": "First name of the bowler (varchar).",
+        "sample_values": [
+          "Lasith",
+          "Dhammika"
+        ]
+      },
+      "bowler__lastname": {
+        "type": "varchar",
+        "description": "Last name of the bowler (varchar).",
+        "sample_values": [
+          "Malinga",
+          "Prasad"
+        ]
+      },
+      "bowler__fullname": {
+        "type": "varchar",
+        "description": "Full name of the bowler (varchar).",
+        "sample_values": [
+          "Lasith Malinga",
+          "Dhammika Prasad"
+        ]
+      },
+      "bowler__image_path": {
+        "type": "varchar",
+        "description": "URL to the bowler's image (varchar).",
+        "sample_values": [
+          "https://cdn.sportmonks.com/images/cricket/players/15/175.png",
+          "https://cdn.sportmonks.com/images/cricket/players/8/4232.png"
+        ]
+      },
+      "bowler__dateofbirth": {
+        "type": "varchar",
+        "description": "Date of birth of the bowler (varchar).",
+        "sample_values": [
+          "1983-08-28",
+          "1983-05-30"
+        ]
+      },
+      "bowler__gender": {
+        "type": "varchar",
+        "description": "Gender of the bowler (varchar).",
+        "sample_values": [
+          "f",
+          "m"
+        ]
+      },
+      "bowler__battingstyle": {
+        "type": "varchar",
+        "description": "Batting style of the bowler (varchar).",
+        "sample_values": [
+          "left-hand-bat",
+          "right-hand-bat"
+        ]
+      },
+      "bowler__bowlingstyle": {
+        "type": "varchar",
+        "description": "Bowling style of the bowler (varchar).",
+        "sample_values": [
+          "right-arm-fast",
+          "right-arm-fast-medium"
+        ]
+      },
+      "bowler__position__resource": {
+        "type": "varchar",
+        "description": "Stores the type of resource for the bowler's position (varchar).",
+        "sample_values": [
+          "positions"
+        ]
+      },
+      "bowler__position__id": {
+        "type": "bigint",
+        "description": "Identifier for the bowler's position (bigint).",
+        "sample_values": [
+          "2",
+          "11"
+        ]
+      },
+      "bowler__position__name": {
+        "type": "varchar",
+        "description": "Name of the bowler's position (varchar).",
+        "sample_values": [
+          "Bowler",
+          "Allrounder"
+        ]
+      },
+      "bowler__updated_at": {
+        "type": "datetime",
+        "description": "Timestamp of the last update to the bowler's record (datetime).",
+        "sample_values": [
+          "2020-04-04 04:42:39",
+          "2020-04-01 14:38:11"
+        ]
+      },
+      "score__resource": {
+        "type": "varchar",
+        "description": "Stores the type of resource for the score, which is 'scores' (varchar).",
+        "sample_values": [
+          "scores"
+        ]
+      },
+      "score__id": {
+        "type": "bigint",
+        "description": "Unique identifier for the score record (bigint). This is a foreign key linking to the scores table.",
+        "sample_values": [
+          "82",
+          "69"
+        ]
+      },
+      "score__name": {
+        "type": "varchar",
+        "description": "Description of the score outcome (varchar).",
+        "sample_values": [
+          "No Run",
+          "1 Run"
+        ]
+      },
+      "score__runs": {
+        "type": "bigint",
+        "description": "Number of runs scored from the ball (bigint).",
+        "sample_values": [
+          "0",
+          "1"
+        ]
+      },
+      "score__four": {
+        "type": "bit",
+        "description": "Indicates if a four was scored (bit).",
+        "sample_values": [
+          "True",
+          "False"
+        ]
+      },
+      "score__six": {
+        "type": "bit",
+        "description": "Indicates if a six was scored (bit).",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "score__bye": {
+        "type": "bigint",
+        "description": "Number of bye runs (bigint).",
+        "sample_values": [
+          "0",
+          "1"
+        ]
+      },
+      "score__leg_bye": {
+        "type": "bigint",
+        "description": "Number of leg bye runs (bigint).",
+        "sample_values": [
+          "0",
+          "1"
+        ]
+      },
+      "score__noball": {
+        "type": "bigint",
+        "description": "Number of no balls (bigint).",
+        "sample_values": [
+          "0",
+          "1"
+        ]
+      },
+      "score__noball_runs": {
+        "type": "bigint",
+        "description": "Runs scored from no balls (bigint).",
+        "sample_values": [
+          "0",
+          "1"
+        ]
+      },
+      "score__is_wicket": {
+        "type": "bit",
+        "description": "Indicates if a wicket fell on this ball (bit).",
+        "sample_values": [
+          "True",
+          "False"
+        ]
+      },
+      "score__ball": {
+        "type": "bit",
+        "description": "Indicates if this record is a ball (bit).",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "score__out": {
+        "type": "bit",
+        "description": "Indicates if the batsman is out (bit).",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "team__resource": {
+        "type": "varchar",
+        "description": "Stores the type of resource for the team, which is 'teams' (varchar).",
+        "sample_values": [
+          "teams"
+        ]
+      },
+      "team__id": {
+        "type": "bigint",
+        "description": "Unique identifier for the team (bigint). This is a foreign key linking to the teams table.",
+        "sample_values": [
+          "343",
+          "61"
+        ]
+      },
+      "team__name": {
+        "type": "varchar",
+        "description": "Name of the team (varchar).",
+        "sample_values": [
+          "Dambulla",
+          "Dolphins"
+        ]
+      },
+      "team__code": {
+        "type": "varchar",
+        "description": "Code representing the team (varchar).",
+        "sample_values": [
+          "DAM",
+          "HD"
+        ]
+      },
+      "team__image_path": {
+        "type": "varchar",
+        "description": "URL to the team's image (varchar).",
+        "sample_values": [
+          "https://cdn.sportmonks.com/images/cricket/teams/23/343.png",
+          "https://cdn.sportmonks.com/images/cricket/teams/29/61.png"
+        ]
+      },
+      "team__country_id": {
+        "type": "bigint",
+        "description": "References the country of the team (bigint). This is a foreign key linking to the countries table.",
+        "sample_values": [
+          "38404",
+          "146"
+        ]
+      },
+      "team__national_team": {
+        "type": "bit",
+        "description": "Indicates if the team is a national team (bit).",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "team__updated_at": {
+        "type": "datetime",
+        "description": "Timestamp of the last update to the team's record (datetime).",
+        "sample_values": [
+          "2019-04-04 09:01:45",
+          "2018-11-13 20:31:04"
+        ]
+      },
+      "updated_at": {
+        "type": "datetime",
+        "description": "Timestamp of the last update to the ball record (datetime).",
+        "sample_values": [
+          "2019-04-06 09:24:59",
+          "2019-04-06 09:25:06"
+        ]
+      },
+      "catchstump_id": {
+        "type": "bigint",
+        "description": "Identifier for any catch or stump event related to this ball (bigint).",
+        "sample_values": [
+          "6778",
+          "184"
+        ]
+      },
+      "batsmanout_id": {
+        "type": "bigint",
+        "description": "Identifier for the batsman who is out (bigint).",
+        "sample_values": [
+          "6685",
+          "4916"
+        ]
+      },
+      "batsman_one_on_creeze_id": {
+        "type": "bigint",
+        "description": "Identifier for the first batsman on the crease (bigint).",
+        "sample_values": [
+          "181",
+          "69"
+        ]
+      },
+      "batsman_two_on_creeze_id": {
+        "type": "bigint",
+        "description": "Identifier for the second batsman on the crease (bigint).",
+        "sample_values": [
+          "5711",
+          "78"
+        ]
+      },
+      "\u274c NO 'score'": "Use score__runs in fixtures__balls",
+      "\u274c NO 'runs'": "Use 'score__runs' in fixtures__balls",
+      "\u274c NO 'overs'": "Use 'ball' in fixtures__balls",
+      "\u274c NO 'wickets'": "Use score__is_wicket or score__out for individual balls, or join to fixtures__runs for total"
+    },
+    "sample_rows": [
+      {
+        "fixture_id": "10183",
+        "team_id": "343",
+        "ball": "6.599999904632568",
+        "scoreboard": "S2",
+        "batsman_id": "5711",
+        "bowler_id": "175",
+        "score_id": "82",
+        "batsman__resource": "players",
+        "batsman__id": "5711",
+        "batsman__country_id": "38404",
+        "batsman__firstname": "Oshada",
+        "batsman__lastname": "Fernando",
+        "batsman__fullname": "Oshada Fernando",
+        "batsman__image_path": "https://cdn.sportmonks.com/images/cricket/players/15/5711.png",
+        "batsman__dateofbirth": "1992-04-15",
+        "batsman__gender": "m",
+        "batsman__battingstyle": "right-hand-bat",
+        "batsman__bowlingstyle": "legbreak",
+        "batsman__position__resource": "positions",
+        "batsman__position__id": "1",
+        "batsman__position__name": "Batsman",
+        "batsman__updated_at": "2020-04-06 05:37:26",
+        "bowler__resource": "players",
+        "bowler__id": "175",
+        "bowler__country_id": "38404",
+        "bowler__firstname": "Lasith",
+        "bowler__lastname": "Malinga",
+        "bowler__fullname": "Lasith Malinga",
+        "bowler__image_path": "https://cdn.sportmonks.com/images/cricket/players/15/175.png",
+        "bowler__dateofbirth": "1983-08-28",
+        "bowler__gender": "m",
+        "bowler__battingstyle": "right-hand-bat",
+        "bowler__bowlingstyle": "right-arm-fast",
+        "bowler__position__resource": "positions",
+        "bowler__position__id": "2",
+        "bowler__position__name": "Bowler",
+        "bowler__updated_at": "2020-04-04 04:42:39",
+        "score__resource": "scores",
+        "score__id": "82",
+        "score__name": "No Run",
+        "score__runs": "0",
+        "score__four": "False",
+        "score__six": "False",
+        "score__bye": "0",
+        "score__leg_bye": "0",
+        "score__noball": "0",
+        "score__noball_runs": "0",
+        "score__is_wicket": "False",
+        "score__ball": "True",
+        "score__out": "False",
+        "team__resource": "teams",
+        "team__id": "343",
+        "team__name": "Dambulla",
+        "team__code": "DAM",
+        "team__image_path": "https://cdn.sportmonks.com/images/cricket/teams/23/343.png",
+        "team__country_id": "38404",
+        "team__national_team": "False",
+        "team__updated_at": "2019-04-04 09:01:45",
+        "catchstump_id": "None",
+        "batsmanout_id": "None",
+        "batsman_one_on_creeze_id": "181",
+        "batsman_two_on_creeze_id": "5711"
+      },
+      {
+        "fixture_id": "10183",
+        "team_id": "343",
+        "ball": "7.099999904632568",
+        "scoreboard": "S2",
+        "batsman_id": "181",
+        "bowler_id": "4232",
+        "score_id": "69",
+        "batsman__resource": "players",
+        "batsman__id": "181",
+        "batsman__country_id": "38404",
+        "batsman__firstname": "Niroshan",
+        "batsman__lastname": "Dickwella",
+        "batsman__fullname": "Niroshan Dickwella",
+        "batsman__image_path": "https://cdn.sportmonks.com/images/cricket/players/21/181.png",
+        "batsman__dateofbirth": "1993-06-23",
+        "batsman__gender": "m",
+        "batsman__battingstyle": "left-hand-bat",
+        "batsman__bowlingstyle": "None",
+        "batsman__position__resource": "positions",
+        "batsman__position__id": "3",
+        "batsman__position__name": "Wicketkeeper",
+        "batsman__updated_at": "2020-04-06 05:18:34",
+        "bowler__resource": "players",
+        "bowler__id": "4232",
+        "bowler__country_id": "38404",
+        "bowler__firstname": "Dhammika",
+        "bowler__lastname": "Prasad",
+        "bowler__fullname": "Dhammika Prasad",
+        "bowler__image_path": "https://cdn.sportmonks.com/images/cricket/players/8/4232.png",
+        "bowler__dateofbirth": "1983-05-30",
+        "bowler__gender": "m",
+        "bowler__battingstyle": "right-hand-bat",
+        "bowler__bowlingstyle": "right-arm-fast-medium",
+        "bowler__position__resource": "positions",
+        "bowler__position__id": "2",
+        "bowler__position__name": "Bowler",
+        "bowler__updated_at": "2020-04-01 14:38:11",
+        "score__resource": "scores",
+        "score__id": "69",
+        "score__name": "1 Run",
+        "score__runs": "1",
+        "score__four": "False",
+        "score__six": "False",
+        "score__bye": "0",
+        "score__leg_bye": "0",
+        "score__noball": "0",
+        "score__noball_runs": "0",
+        "score__is_wicket": "False",
+        "score__ball": "True",
+        "score__out": "False",
+        "team__resource": "teams",
+        "team__id": "343",
+        "team__name": "Dambulla",
+        "team__code": "DAM",
+        "team__image_path": "https://cdn.sportmonks.com/images/cricket/teams/23/343.png",
+        "team__country_id": "38404",
+        "team__national_team": "False",
+        "team__updated_at": "2019-04-04 09:01:45",
+        "catchstump_id": "None",
+        "batsmanout_id": "None",
+        "batsman_one_on_creeze_id": "181",
+        "batsman_two_on_creeze_id": "5711"
+      }
+    ]
   },
   "history2.fixtures__batting": {
-    "fixture_id": "Unique identifier of the cricket match.",
-    "team_id": "⚠️ NUMERIC team identifier (NOT team name). Use with scoreboard filter.",
-    "scoreboard": "S2 for batting team and S1 for bowling team.",
-    "player_id": "Batsman ID. ⚠️ Use player_id NOT player__id",
-    "ball": "Ball number when this batting stat was recorded.",
-    "score": "✓ Batsman runs (Use 'score' in fixtures__batting, NOT 'score__runs')",
-    "bowling_player_id": "ID of the bowler.",
-    "rate": "Batting strike rate.",
-    "❌ NO 'batsman__fullname'": "Join to fixtures__balls for batsman names",
-    "❌ NO 'score__runs'": "Use 'score' in this table, not 'score__runs'",
-    "❌ NO 'overs'": "Use ball number instead",
-    "❌ NO 'batsman_id'": "Use player_id in this table, not batsman_id"
+    "table_summary": "The fixtures__batting table stores detailed statistics for each batting performance in cricket matches, capturing data on individual players' scores, the context of their batting (such as the ball faced), and the match fixture they are part of. It provides insights into player performance on a ball-by-ball basis.",
+    "columns": {
+      "fixture_id": {
+        "type": "bigint",
+        "description": "Links to the match fixture (bigint), serves as a foreign key to the fixtures table.",
+        "sample_values": [
+          "26735",
+          "26738"
+        ]
+      },
+      "team_id": {
+        "type": "bigint",
+        "description": "Identifies the team for which the player is batting (bigint), serves as a foreign key to the teams table.",
+        "sample_values": [
+          "447",
+          "450"
+        ]
+      },
+      "scoreboard": {
+        "type": "varchar",
+        "description": "Indicates the scoreboard status (varchar), where S1 represents the bowling team and S2 represents the batting/chasing team.",
+        "sample_values": [
+          "S2",
+          "S1"
+        ]
+      },
+      "player_id": {
+        "type": "bigint",
+        "description": "Identifies the player who is batting (bigint), serves as a foreign key to the players table.",
+        "sample_values": [
+          "7638",
+          "7347"
+        ]
+      },
+      "wicket_id": {
+        "type": "bigint",
+        "description": "Links to the wicket record if the player was dismissed (bigint), serves as a foreign key to the wickets table.",
+        "sample_values": [
+          "84",
+          "54"
+        ]
+      },
+      "ball": {
+        "type": "bigint",
+        "description": "Indicates the specific ball faced by the player (bigint), important for understanding the context of the score.",
+        "sample_values": [
+          "2",
+          "19"
+        ]
+      },
+      "score_id": {
+        "type": "bigint",
+        "description": "A unique identifier for the score record (bigint), serves as a foreign key to the scores table.",
+        "sample_values": [
+          "84",
+          "54"
+        ]
+      },
+      "score": {
+        "type": "bigint",
+        "description": "Records the runs scored by the player on that specific ball (bigint), crucial for calculating per-ball performance.",
+        "sample_values": [
+          "5",
+          "30"
+        ]
+      },
+      "four_x": {
+        "type": "bigint",
+        "description": "Counts the number of fours hit by the player on that ball (bigint), useful for assessing boundary scoring.",
+        "sample_values": [
+          "1",
+          "4"
+        ]
+      },
+      "six_x": {
+        "type": "bigint",
+        "description": "Counts the number of sixes hit by the player on that ball (bigint), also important for boundary scoring.",
+        "sample_values": [
+          "0",
+          "1"
+        ]
+      },
+      "bowling_player_id": {
+        "type": "bigint",
+        "description": "Identifies the bowler who bowled the ball (bigint), serves as a foreign key to the players table.",
+        "sample_values": [
+          "2711",
+          "3212"
+        ]
+      },
+      "fow_score": {
+        "type": "bigint",
+        "description": "Records the score at the fall of the wicket (bigint), important for understanding match context.",
+        "sample_values": [
+          "0",
+          "41"
+        ]
+      },
+      "fow_balls": {
+        "type": "real",
+        "description": "Indicates the number of balls faced at the fall of the wicket (real), useful for analyzing innings progression.",
+        "sample_values": [
+          "0.0",
+          "4.599999904632568"
+        ]
+      },
+      "rate": {
+        "type": "real",
+        "description": "Records the scoring rate of the player (real), calculated as runs per 100 balls faced.",
+        "sample_values": [
+          "250.0",
+          "158.0"
+        ]
+      },
+      "updated_at": {
+        "type": "datetime",
+        "description": "Timestamp of the last update to the record (datetime), useful for tracking data changes.",
+        "sample_values": [
+          "2021-08-07 17:38:03",
+          "2021-08-08 13:38:02"
+        ]
+      },
+      "catch_stump_player_id": {
+        "type": "bigint",
+        "description": "Identifies the player involved in the dismissal (bigint), serves as a foreign key to the players table.",
+        "sample_values": [
+          "7599",
+          "2711"
+        ]
+      },
+      "\u274c NO 'score__runs'": "Use 'score' in fixtures__batting",
+      "\u274c NO 'overs'": "Use 'ball' in fixtures__batting",
+      "\u274c NO 'batsman__fullname'": "Join to fixtures__balls for batsman names",
+      "\u274c NO 'batsman_id'": "Use player_id in fixtures__batting"
+    },
+    "sample_rows": [
+      {
+        "fixture_id": "26735",
+        "team_id": "447",
+        "scoreboard": "S2",
+        "player_id": "7638",
+        "wicket_id": "84",
+        "ball": "2",
+        "score_id": "84",
+        "score": "5",
+        "four_x": "1",
+        "six_x": "0",
+        "bowling_player_id": "None",
+        "fow_score": "0",
+        "fow_balls": "0.0",
+        "rate": "250.0",
+        "catch_stump_player_id": "None"
+      },
+      {
+        "fixture_id": "26738",
+        "team_id": "450",
+        "scoreboard": "S1",
+        "player_id": "7347",
+        "wicket_id": "54",
+        "ball": "19",
+        "score_id": "54",
+        "score": "30",
+        "four_x": "4",
+        "six_x": "1",
+        "bowling_player_id": "2711",
+        "fow_score": "41",
+        "fow_balls": "4.599999904632568",
+        "rate": "158.0",
+        "catch_stump_player_id": "7599"
+      }
+    ]
   },
   "history2.fixtures__bowling": {
-    "fixture_id": "Unique identifier of the cricket match.",
-    "team_id": "⚠️ NUMERIC team identifier (NOT team name). Use with scoreboard filter.",
-    "scoreboard": "S1 for bowling team and S2 for batting team.",
-    "player_id": "Bowler ID (use this for joins)",
-    "overs": "Over number (decimal: 5.3 means 5th over, 3rd ball).",
-    "runs": "Runs conceded by bowler (NOT 'score' or 'score__runs')",
-    "wickets": "Wickets taken by bowler till that over.",
-    "rate": "Bowling economy rate.",
-    "❌ NO 'bowler__fullname'": "CRITICAL: Join to fixtures__balls for bowler names!",
-    "❌ NO 'batsman__fullname'": "Join to fixtures__balls for batsman names",
-    "❌ NO 'batsman_id'": "Join to fixtures__balls for batsman information",
-    "❌ NO 'bowler_id'": "Use player_id in this table, not bowler_id",
-    "❌ NO 'score'": "Use 'runs' for runs conceded in this table",
-    "❌ NO 'score__runs'": "Use 'runs' for runs conceded in this table",
-    "❌ NO 'ball'": "Use 'overs' in this table"
+    "table_summary": "The fixtures__bowling table stores detailed statistics for each bowler's performance in specific cricket matches (fixtures). It includes metrics such as overs bowled, runs conceded, wickets taken, and additional bowling-related statistics, allowing for in-depth analysis of bowling performances across different matches.",
+    "columns": {
+      "fixture_id": {
+        "type": "bigint",
+        "description": "References the specific match (fixture) to which this bowling performance belongs. This is a foreign key linking to a fixtures table. Data type: bigint.",
+        "sample_values": [
+          "26933",
+          "26936"
+        ]
+      },
+      "team_id": {
+        "type": "bigint",
+        "description": "Identifies the team for which the bowler is playing. This is a foreign key linking to a teams table. Data type: bigint.",
+        "sample_values": [
+          "43",
+          "38"
+        ]
+      },
+      "scoreboard": {
+        "type": "varchar",
+        "description": "Represents the scoreboard identifier, where 'S1' indicates the bowling team and 'S2' indicates the batting team. Data type: varchar. Important to understand the context of scores in relation to teams.",
+        "sample_values": [
+          "S1",
+          "S2"
+        ]
+      },
+      "player_id": {
+        "type": "bigint",
+        "description": "References the specific player (bowler) who delivered the bowling performance. This is a foreign key linking to a players table. Data type: bigint.",
+        "sample_values": [
+          "719",
+          "100"
+        ]
+      },
+      "overs": {
+        "type": "real",
+        "description": "Records the number of overs bowled in decimal format (e.g., 3.0 for 3 overs). Data type: real. Misinterpretation can occur if not understood that it represents overs and balls.",
+        "sample_values": [
+          "3.0",
+          "4.0"
+        ]
+      },
+      "medians": {
+        "type": "bigint",
+        "description": "Tracks the number of median deliveries (not commonly used in all contexts). Data type: bigint.",
+        "sample_values": [
+          "0",
+          "1"
+        ]
+      },
+      "runs": {
+        "type": "bigint",
+        "description": "Records the total runs conceded by the bowler during their spell. Data type: bigint. This is crucial for performance analysis.",
+        "sample_values": [
+          "23",
+          "25"
+        ]
+      },
+      "wickets": {
+        "type": "bigint",
+        "description": "Indicates the number of wickets taken by the bowler. Data type: bigint. Important to note that this reflects wickets taken, not remaining.",
+        "sample_values": [
+          "1",
+          "2"
+        ]
+      },
+      "wide": {
+        "type": "bigint",
+        "description": "Counts the number of wide deliveries bowled. Data type: bigint.",
+        "sample_values": [
+          "1",
+          "2"
+        ]
+      },
+      "noball": {
+        "type": "bigint",
+        "description": "Counts the number of no-balls bowled. Data type: bigint.",
+        "sample_values": [
+          "0",
+          "1"
+        ]
+      },
+      "rate": {
+        "type": "real",
+        "description": "Calculates the bowling economy rate, representing runs conceded per over. Data type: real. Essential for evaluating bowler efficiency.",
+        "sample_values": [
+          "7.670000076293945",
+          "6.25"
+        ]
+      },
+      "updated_at": {
+        "type": "datetime",
+        "description": "Timestamp indicating when the record was last updated. Data type: datetime.",
+        "sample_values": [
+          "2022-01-23 23:34:21",
+          "2022-02-01 19:10:30"
+        ]
+      },
+      "\u274c NO 'score'": "Use 'runs' for runs conceded in fixtures__bowling",
+      "\u274c NO 'score__runs'": "Use 'runs' in fixtures__bowling",
+      "\u274c NO 'ball'": "Use 'overs' in fixtures__bowling",
+      "\u274c NO 'batsman__fullname'": "Join to fixtures__balls for batsman names",
+      "\u274c NO 'bowler__fullname'": "CRITICAL: Join to fixtures__balls for bowler names!",
+      "\u274c NO 'batsman_id'": "Join to fixtures__balls for batsman information",
+      "\u274c NO 'bowler_id'": "Use player_id in fixtures__bowling"
+    },
+    "sample_rows": [
+      {
+        "fixture_id": "26933",
+        "team_id": "43",
+        "scoreboard": "S1",
+        "player_id": "719",
+        "overs": "3.0",
+        "medians": "0",
+        "runs": "23",
+        "wickets": "1",
+        "wide": "1",
+        "noball": "0",
+        "rate": "7.670000076293945"
+      },
+      {
+        "fixture_id": "26933",
+        "team_id": "43",
+        "scoreboard": "S1",
+        "player_id": "100",
+        "overs": "4.0",
+        "medians": "0",
+        "runs": "25",
+        "wickets": "2",
+        "wide": "2",
+        "noball": "0",
+        "rate": "6.25"
+      }
+    ]
+  },
+  "history2.fixtures__lineup": {
+    "table_summary": "The fixtures__lineup table stores detailed information about players who are part of a cricket match lineup, including their personal details, roles within the team, and match-specific attributes. This table is essential for understanding player participation in specific matches and their respective positions.",
+    "columns": {
+      "country_id": {
+        "type": "bigint",
+        "description": "Stores the identifier for the player's country. Data type: bigint. This is a foreign key that links to a countries table, providing context for the player's nationality.",
+        "sample_values": [
+          "2817",
+          "98"
+        ]
+      },
+      "firstname": {
+        "type": "varchar",
+        "description": "Stores the player's first name. Data type: varchar. This is part of the player's identity.",
+        "sample_values": [
+          "Anton",
+          "Shane"
+        ]
+      },
+      "lastname": {
+        "type": "varchar",
+        "description": "Stores the player's last name. Data type: varchar. This is part of the player's identity.",
+        "sample_values": [
+          "Devcich",
+          "Watson"
+        ]
+      },
+      "fullname": {
+        "type": "varchar",
+        "description": "Stores the full name of the player, combining firstname and lastname. Data type: varchar. This is useful for display purposes.",
+        "sample_values": [
+          "Anton Devcich",
+          "Shane Watson"
+        ]
+      },
+      "image_path": {
+        "type": "varchar",
+        "description": "Stores the URL to the player's image. Data type: varchar. This is used for visual representation in applications.",
+        "sample_values": [
+          "https://cdn.sportmonks.com/images/cricket/players/17/369.png",
+          "https://cdn.sportmonks.com/images/cricket/players/19/787.png"
+        ]
+      },
+      "dateofbirth": {
+        "type": "varchar",
+        "description": "Stores the player's date of birth. Data type: varchar. This is important for age-related statistics but should be formatted correctly for date operations.",
+        "sample_values": [
+          "1985-09-28",
+          "1981-06-17"
+        ]
+      },
+      "gender": {
+        "type": "varchar",
+        "description": "Stores the gender of the player. Data type: varchar. This is relevant for demographic statistics.",
+        "sample_values": [
+          "f",
+          "m"
+        ]
+      },
+      "battingstyle": {
+        "type": "varchar",
+        "description": "Stores the player's batting style (e.g., left-hand-bat). Data type: varchar. This is important for understanding player capabilities.",
+        "sample_values": [
+          "left-hand-bat",
+          "right-hand-bat"
+        ]
+      },
+      "position__resource": {
+        "type": "varchar",
+        "description": "Stores the type of position resource, typically 'positions'. Data type: varchar. This indicates the nature of the player's role.",
+        "sample_values": [
+          "positions"
+        ]
+      },
+      "position__id": {
+        "type": "bigint",
+        "description": "Stores a unique identifier for the player's position. Data type: bigint. This is a foreign key linking to a positions table, defining the player's role in the lineup.",
+        "sample_values": [
+          "1",
+          "4"
+        ]
+      },
+      "position__name": {
+        "type": "varchar",
+        "description": "Stores the name of the player's position (e.g., Batsman, Allrounder). Data type: varchar. This provides a human-readable description of the player's role.",
+        "sample_values": [
+          "Batsman",
+          "Allrounder"
+        ]
+      },
+      "updated_at": {
+        "type": "datetime",
+        "description": "Stores the timestamp of the last update to the record. Data type: datetime. This is useful for tracking changes over time.",
+        "sample_values": [
+          "2020-03-31 14:47:20",
+          "2020-02-06 04:59:45"
+        ]
+      },
+      "lineup__team_id": {
+        "type": "bigint",
+        "description": "Stores the identifier for the team the player is part of in this lineup. Data type: bigint. This is a foreign key linking to a teams table, indicating team affiliation.",
+        "sample_values": [
+          "54",
+          "50"
+        ]
+      },
+      "lineup__captain": {
+        "type": "bit",
+        "description": "Indicates whether the player is the captain of the team in this lineup. Data type: bit. This is a boolean value (True/False) and is crucial for match strategy.",
+        "sample_values": [
+          "True",
+          "False"
+        ]
+      },
+      "lineup__wicketkeeper": {
+        "type": "bit",
+        "description": "Indicates whether the player is a wicketkeeper in this lineup. Data type: bit. This is a boolean value (True/False) and is important for team composition.",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "lineup__substitution": {
+        "type": "bit",
+        "description": "Indicates whether the player is a substitute in this lineup. Data type: bit. This is a boolean value (True/False) and is relevant for understanding player availability.",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "bowlingstyle": {
+        "type": "varchar",
+        "description": "Stores the player's bowling style (e.g., right-arm-fast-medium). Data type: varchar. This is important for understanding player capabilities.",
+        "sample_values": [
+          "slow-left-arm-orthodox",
+          "right-arm-fast-medium"
+        ]
+      }
+    },
+    "sample_rows": [
+      {
+        "country_id": "2817",
+        "firstname": "Anton",
+        "lastname": "Devcich",
+        "fullname": "Anton Devcich",
+        "image_path": "https://cdn.sportmonks.com/images/cricket/players/17/369.png",
+        "dateofbirth": "1985-09-28",
+        "gender": "m",
+        "battingstyle": "left-hand-bat",
+        "position__resource": "positions",
+        "position__id": "1",
+        "position__name": "Batsman",
+        "lineup__team_id": "54",
+        "lineup__captain": "False",
+        "lineup__wicketkeeper": "False",
+        "lineup__substitution": "False",
+        "bowlingstyle": "slow-left-arm-orthodox"
+      },
+      {
+        "country_id": "98",
+        "firstname": "Shane",
+        "lastname": "Watson",
+        "fullname": "Shane Watson",
+        "image_path": "https://cdn.sportmonks.com/images/cricket/players/19/787.png",
+        "dateofbirth": "1981-06-17",
+        "gender": "m",
+        "battingstyle": "right-hand-bat",
+        "position__resource": "positions",
+        "position__id": "4",
+        "position__name": "Allrounder",
+        "lineup__team_id": "54",
+        "lineup__captain": "True",
+        "lineup__wicketkeeper": "False",
+        "lineup__substitution": "False",
+        "bowlingstyle": "right-arm-fast-medium"
+      }
+    ]
   },
   "history2.fixtures__runs": {
-    "fixture_id": "Unique identifier of the cricket match.",
-    "team_id": "⚠️ NUMERIC team identifier (NOT team name). Use with scoreboard filter.",
-    "inning": "Choose inning = 2 for chasing/batting team and inning = 1 for bowling/defending team. ⚠️ ONLY in fixtures__runs, NOT in fixtures__balls. inning 2 is same as scoreboard S2",
-    "score": "Total runs in inning.",
-    "wickets": "Total wickets lost in inning.",
-    "overs": "Total overs played (decimal format).",
-    "❌ NO 'batsman__fullname'": "Join to fixtures__balls for player names",
-    "❌ NO 'bowler__fullname'": "Join to fixtures__balls for player names",
-    "❌ NO 'ball'": "Use 'overs' in this table for total overs",
-    "❌ NO 'score__runs'": "Use 'score' for total innings score",
-    "❌ NO 'inning' in other tables": "inning column ONLY exists in fixtures__runs"
+    "table_summary": "The fixtures__runs table stores detailed statistics for each inning of cricket matches, including the runs scored, wickets lost, and overs bowled by each team. It is essential for analyzing team performance in specific fixtures.",
+    "columns": {
+      "fixture_id": {
+        "type": "bigint",
+        "description": "A bigint that acts as a foreign key linking to the fixtures table, representing the specific match. This is crucial for joining with other match-related data.",
+        "sample_values": [
+          "26276",
+          "26279"
+        ]
+      },
+      "team_id": {
+        "type": "bigint",
+        "description": "A bigint that serves as a foreign key linking to the teams table, indicating which team the record pertains to. It is important for identifying team-specific statistics.",
+        "sample_values": [
+          "1197",
+          "1715"
+        ]
+      },
+      "inning": {
+        "type": "bigint",
+        "description": "A bigint representing the inning number (1 or 2) in which the runs were scored. This is important for distinguishing between the two innings of a match.",
+        "sample_values": [
+          "1",
+          "2"
+        ]
+      },
+      "updated_at": {
+        "type": "datetime",
+        "description": "A datetime indicating when the record was last updated. This is useful for tracking changes but not typically used in queries for historical data.",
+        "sample_values": [
+          "2021-04-28 19:14:42",
+          "2021-04-28 20:30:34"
+        ]
+      },
+      "score": {
+        "type": "bigint",
+        "description": "A bigint representing the total runs scored in the inning at the time of the record. Care should be taken as 'score' can mean different things in different contexts.",
+        "sample_values": [
+          "81",
+          "78"
+        ]
+      },
+      "wickets": {
+        "type": "bigint",
+        "description": "A bigint indicating the number of wickets lost in the inning. This represents wickets that have been dismissed and not those remaining.",
+        "sample_values": [
+          "5",
+          "3"
+        ]
+      },
+      "overs": {
+        "type": "real",
+        "description": "A real number representing the overs bowled in decimal format (e.g., 10.0 for 10 overs). This is critical for understanding the progress of the inning.",
+        "sample_values": [
+          "10.0",
+          "8.199999809265137"
+        ]
+      },
+      "pp1": {
+        "type": "varchar",
+        "description": "A varchar that stores the powerplay overs for the first phase. It indicates the overs range (e.g., '1-3'). This is important for analyzing scoring patterns during powerplays.",
+        "sample_values": [
+          "1-3",
+          "1-10"
+        ]
+      },
+      "pp2": {
+        "type": "varchar",
+        "description": "A varchar that stores the powerplay overs for the second phase, similar to pp1. It may contain 'None' if not applicable.",
+        "sample_values": [
+          "11-40",
+          "11-37"
+        ]
+      },
+      "pp3": {
+        "type": "varchar",
+        "description": "A varchar that stores the powerplay overs for the third phase, similar to pp1. It may also contain 'None' if not applicable.",
+        "sample_values": [
+          "41-50",
+          "38-47"
+        ]
+      },
+      "\u274c NO 'score__runs'": "Use 'score' in fixtures__runs",
+      "\u274c NO 'ball'": "Use 'overs' in fixtures__runs",
+      "\u274c NO 'batsman__fullname'": "Join to fixtures__balls for player names",
+      "\u274c NO 'bowler__fullname'": "Join to fixtures__balls for player names",
+      "\u274c NO 'team__name'": "team_id is numeric in fixtures__runs. To filter by team name: team_id = (SELECT id FROM history2.teams WHERE name = 'Team Name')"
+    },
+    "sample_rows": [
+      {
+        "fixture_id": "26276",
+        "team_id": "1197",
+        "inning": "1",
+        "score": "81",
+        "wickets": "5",
+        "overs": "10.0",
+        "pp1": "1-3",
+        "pp2": "None",
+        "pp3": "None"
+      },
+      {
+        "fixture_id": "26276",
+        "team_id": "1715",
+        "inning": "2",
+        "score": "78",
+        "wickets": "5",
+        "overs": "10.0",
+        "pp1": "1-3",
+        "pp2": "None",
+        "pp3": "None"
+      }
+    ]
+  },
+  "history2.fixtures__scoreboards": {
+    "table_summary": "The fixtures__scoreboards table stores detailed statistics for cricket matches, specifically focusing on the scoreboards for each team during a fixture. It captures metrics such as runs scored, extras, overs bowled, and wickets lost, allowing for comprehensive analysis of match performance.",
+    "columns": {
+      "fixture_id": {
+        "type": "bigint",
+        "description": "Links to the specific match fixture this scoreboard entry belongs to. Data type: bigint. This is a foreign key that relates to the fixtures table.",
+        "sample_values": [
+          "26195",
+          "26198"
+        ]
+      },
+      "team_id": {
+        "type": "bigint",
+        "description": "Identifies the team associated with this scoreboard entry. Data type: bigint. This is a foreign key that relates to the teams table.",
+        "sample_values": [
+          "1242",
+          "735"
+        ]
+      },
+      "type": {
+        "type": "varchar",
+        "description": "Indicates the type of score recorded (e.g., total, extra). Data type: varchar. Misuse warning: Ensure to differentiate between types when aggregating data.",
+        "sample_values": [
+          "extra",
+          "total"
+        ]
+      },
+      "scoreboard": {
+        "type": "varchar",
+        "description": "Represents the scoreboard identifier (e.g., S1 for bowling team, S2 for batting team). Data type: varchar.",
+        "sample_values": [
+          "S1",
+          "S2"
+        ]
+      },
+      "wide": {
+        "type": "bigint",
+        "description": "Records the number of wide balls bowled. Data type: bigint. This metric is important for calculating extras.",
+        "sample_values": [
+          "0",
+          "3"
+        ]
+      },
+      "noball_runs": {
+        "type": "bigint",
+        "description": "Stores the runs scored from no balls. Data type: bigint. Important for understanding total runs contributed by extras.",
+        "sample_values": [
+          "0",
+          "1"
+        ]
+      },
+      "noball_balls": {
+        "type": "bigint",
+        "description": "Counts the number of no balls bowled. Data type: bigint. This metric is crucial for assessing bowling performance.",
+        "sample_values": [
+          "0",
+          "1"
+        ]
+      },
+      "bye": {
+        "type": "bigint",
+        "description": "Records the number of runs scored as byes. Data type: bigint. Important for total runs calculation.",
+        "sample_values": [
+          "0",
+          "2"
+        ]
+      },
+      "leg_bye": {
+        "type": "bigint",
+        "description": "Stores the number of runs scored as leg byes. Data type: bigint. Important for total runs calculation.",
+        "sample_values": [
+          "0",
+          "4"
+        ]
+      },
+      "penalty": {
+        "type": "bigint",
+        "description": "Records any penalty runs awarded. Data type: bigint. Rarely used but important for total runs.",
+        "sample_values": [
+          "0",
+          "5"
+        ]
+      },
+      "total": {
+        "type": "bigint",
+        "description": "Represents the total runs scored by the team at this point in the match. Data type: bigint. Misuse warning: Ensure to differentiate between per-ball runs and innings total.",
+        "sample_values": [
+          "93",
+          "0"
+        ]
+      },
+      "overs": {
+        "type": "real",
+        "description": "Indicates the number of overs bowled in decimal format (e.g., 10.0 for 10 overs). Data type: real. Important for understanding match progression.",
+        "sample_values": [
+          "10.0",
+          "0.0"
+        ]
+      },
+      "wickets": {
+        "type": "bigint",
+        "description": "Records the number of wickets lost by the team. Data type: bigint. This refers to wickets lost, not remaining.",
+        "sample_values": [
+          "4",
+          "0"
+        ]
+      },
+      "updated_at": {
+        "type": "datetime",
+        "description": "Timestamp for the last update of this record. Data type: datetime.",
+        "sample_values": [
+          "2021-05-06 09:43:02",
+          "2021-05-06 12:08:27"
+        ]
+      }
+    },
+    "sample_rows": [
+      {
+        "fixture_id": "26195",
+        "team_id": "1242",
+        "type": "total",
+        "scoreboard": "S1",
+        "wide": "0",
+        "noball_runs": "0",
+        "noball_balls": "0",
+        "bye": "0",
+        "leg_bye": "0",
+        "penalty": "0",
+        "total": "93",
+        "overs": "10.0",
+        "wickets": "4"
+      },
+      {
+        "fixture_id": "26198",
+        "team_id": "735",
+        "type": "extra",
+        "scoreboard": "S2",
+        "wide": "0",
+        "noball_runs": "1",
+        "noball_balls": "0",
+        "bye": "0",
+        "leg_bye": "4",
+        "penalty": "0",
+        "total": "0",
+        "overs": "0.0",
+        "wickets": "0"
+      }
+    ]
+  },
+  "history2.leagues": {
+    "table_summary": "The leagues table stores information about various cricket leagues and tournaments, including their identifiers, names, types, and associated metadata. This is crucial for categorizing matches and seasons within the cricket statistics database.",
+    "columns": {
+      "season_id": {
+        "type": "bigint",
+        "description": "Stores the identifier for the season associated with the league. Data type: bigint. This may serve as a foreign key linking to a seasons table, providing context for when the league takes place.",
+        "sample_values": [
+          "12",
+          "20"
+        ]
+      },
+      "country_id": {
+        "type": "bigint",
+        "description": "Stores the identifier for the country where the league is held. Data type: bigint. This may serve as a foreign key linking to a countries table, helping to categorize leagues by their geographical location.",
+        "sample_values": [
+          "11",
+          "20"
+        ]
+      },
+      "name": {
+        "type": "varchar",
+        "description": "Stores the full name of the league. Data type: varchar. This is used for display purposes and should be unique within the context of the same country and season.",
+        "sample_values": [
+          "Abu Dhabi T10 League",
+          "ACC Men's Premier Cup"
+        ]
+      },
+      "code": {
+        "type": "varchar",
+        "description": "Stores a short code or abbreviation for the league. Data type: varchar. This is often used for quick references and should be unique within the same country and season.",
+        "sample_values": [
+          "AC",
+          "ACC"
+        ]
+      },
+      "image_path": {
+        "type": "varchar",
+        "description": "Stores the URL for the league's logo or image. Data type: varchar. This is used for visual representation in applications and should be validated for correct URL format.",
+        "sample_values": [
+          "https://cdn.sportmonks.com",
+          "https://cdn.sportmonks.com/images/cricket/leagues/0/192.png"
+        ]
+      },
+      "type": {
+        "type": "varchar",
+        "description": "Stores the type of league, such as 'league' or 'phase'. Data type: varchar. This helps in categorizing the nature of the competition and should be used carefully to avoid misclassification.",
+        "sample_values": [
+          "league",
+          "phase"
+        ]
+      },
+      "updated_at": {
+        "type": "datetime",
+        "description": "Stores the timestamp of the last update to the league record. Data type: datetime. This is important for tracking changes and should be managed to reflect the most recent data accurately.",
+        "sample_values": [
+          "2018-11-14 07:27:53",
+          "2018-11-14 07:37:31"
+        ]
+      }
+    },
+    "sample_rows": [
+      {
+        "season_id": "1484",
+        "country_id": "153732",
+        "name": "Indian Premier League",
+        "code": "IPL",
+        "image_path": "https://cdn.sportmonks.com/images/cricket/leagues/1/1.png",
+        "type": "league"
+      },
+      {
+        "season_id": "1295",
+        "country_id": "99474",
+        "name": "One Day International",
+        "code": "ODI",
+        "image_path": "https://cdn.sportmonks.com/images/cricket/leagues/2/2.png",
+        "type": "phase"
+      }
+    ]
+  },
+  "history2.officials": {
+    "table_summary": "This table stores information about cricket match officials, including their personal details and identifiers. It serves to link officials to matches and events within the cricket statistics database, providing context for their roles in officiating games.",
+    "columns": {
+      "country_id": {
+        "type": "bigint",
+        "description": "Stores the identifier for the country associated with the official, which is a bigint. This may serve as a foreign key linking to a countries table. Care should be taken to ensure that the country_id exists in the referenced table.",
+        "sample_values": [
+          "146",
+          "52126"
+        ]
+      },
+      "firstname": {
+        "type": "varchar",
+        "description": "Stores the first name of the official, which is a varchar. This is used for display purposes and should be combined with lastname for full names.",
+        "sample_values": [
+          "Maraise",
+          "Aleem"
+        ]
+      },
+      "lastname": {
+        "type": "varchar",
+        "description": "Stores the last name of the official, which is a varchar. Similar to firstname, it is used for display purposes and should be combined with firstname for full names.",
+        "sample_values": [
+          "Erasmus",
+          "Dar"
+        ]
+      },
+      "fullname": {
+        "type": "varchar",
+        "description": "Stores the full name of the official, which is a varchar. This is a derived field combining firstname and lastname. It is useful for display but should not be used as a key for joins.",
+        "sample_values": [
+          "Maraise Erasmus",
+          "Aleem Dar"
+        ]
+      },
+      "dateofbirth": {
+        "type": "varchar",
+        "description": "Stores the date of birth of the official, which is a varchar. It should be formatted consistently (e.g., YYYY-MM-DD) for accurate date comparisons.",
+        "sample_values": [
+          "1964-02-27",
+          "1968-06-06"
+        ]
+      },
+      "gender": {
+        "type": "varchar",
+        "description": "Stores the gender of the official, which is a varchar. This is typically represented as 'm' for male and 'f' for female. Care should be taken to handle this data appropriately in queries.",
+        "sample_values": [
+          "f",
+          "m"
+        ]
+      },
+      "updated_at": {
+        "type": "datetime",
+        "description": "Stores the timestamp of the last update to the record, which is a datetime. This is useful for tracking changes but should not be used as a key for joins.",
+        "sample_values": [
+          "2018-10-11 09:38:55",
+          "2018-10-11 09:40:07"
+        ]
+      }
+    },
+    "sample_rows": [
+      {
+        "country_id": "146",
+        "firstname": "Maraise",
+        "lastname": "Erasmus",
+        "fullname": "Maraise Erasmus",
+        "dateofbirth": "1964-02-27",
+        "gender": "m"
+      },
+      {
+        "country_id": "52126",
+        "firstname": "Aleem",
+        "lastname": "Dar",
+        "fullname": "Aleem Dar",
+        "dateofbirth": "1968-06-06",
+        "gender": "m"
+      }
+    ]
+  },
+  "history2.players": {
+    "table_summary": "The history2.players table stores detailed information about cricket players, including their personal details, playing styles, and positions. This table serves as a reference for player data in a cricket statistics database, which includes ball-by-ball, batting, bowling, and innings data.",
+    "columns": {
+      "id": {
+        "type": "bigint",
+        "description": "Primary key for the players table. Use this to join with player_id in other tables (e.g., fixtures__bowling.player_id, fixtures__batting.player_id). Example: SELECT id FROM history2.players WHERE fullname = 'Pat Cummins'",
+        "sample_values": [
+          "719",
+          "100"
+        ]
+      },
+      "country_id": {
+        "type": "bigint",
+        "description": "Stores the identifier for the country the player represents. Data type: bigint. This is a foreign key that relates to a countries table, allowing for country-specific queries.",
+        "sample_values": [
+          "98",
+          "2817"
+        ]
+      },
+      "firstname": {
+        "type": "varchar",
+        "description": "Stores the player's first name. Data type: varchar. This is used for display purposes and should be combined with lastname for full identification.",
+        "sample_values": [
+          "Alex",
+          "Todd"
+        ]
+      },
+      "lastname": {
+        "type": "varchar",
+        "description": "Stores the player's last name. Data type: varchar. This is used for display purposes and should be combined with firstname for full identification.",
+        "sample_values": [
+          "Bleakley",
+          "McCann"
+        ]
+      },
+      "fullname": {
+        "type": "varchar",
+        "description": "Stores the full name of the player, combining firstname and lastname. Data type: varchar. This is useful for queries requiring the complete name.",
+        "sample_values": [
+          "Alex Bleakley",
+          "Todd McCann"
+        ]
+      },
+      "image_path": {
+        "type": "varchar",
+        "description": "Stores the URL of the player's image. Data type: varchar. This is used for displaying player images in applications.",
+        "sample_values": [
+          "https://cdn.sportmonks.com/images/cricket/placeholder.png",
+          "https://cdn.sportmonks.com/images/cricket/players/27/11163.png"
+        ]
+      },
+      "dateofbirth": {
+        "type": "varchar",
+        "description": "Stores the player's date of birth. Data type: varchar. It is important for age calculations and should be formatted consistently.",
+        "sample_values": [
+          "1991-05-29",
+          "1988-10-07"
+        ]
+      },
+      "gender": {
+        "type": "varchar",
+        "description": "Stores the player's gender. Data type: varchar. This can be used for demographic analysis but should be handled sensitively.",
+        "sample_values": [
+          "f",
+          "m"
+        ]
+      },
+      "battingstyle": {
+        "type": "varchar",
+        "description": "Stores the player's batting style (e.g., right-hand-bat). Data type: varchar. This is important for understanding player capabilities and match strategies.",
+        "sample_values": [
+          "right-hand-bat",
+          "left-hand-bat"
+        ]
+      },
+      "bowlingstyle": {
+        "type": "varchar",
+        "description": "Stores the player's bowling style (e.g., right-arm-fast-medium). Data type: varchar. This is important for understanding player capabilities and match strategies.",
+        "sample_values": [
+          "right-arm-fast-medium",
+          "legbreak"
+        ]
+      },
+      "position__resource": {
+        "type": "varchar",
+        "description": "Stores the type of position resource, which is 'positions' in this context. Data type: varchar. This helps identify the type of entity represented in the database.",
+        "sample_values": [
+          "positions"
+        ]
+      },
+      "position__id": {
+        "type": "bigint",
+        "description": "Stores a unique identifier for the player's position. Data type: bigint. This is a foreign key that relates to a positions table, allowing for position-specific queries.",
+        "sample_values": [
+          "1",
+          "2"
+        ]
+      },
+      "position__name": {
+        "type": "varchar",
+        "description": "Stores the name of the player's position (e.g., Batsman). Data type: varchar. This is useful for understanding player roles in the team.",
+        "sample_values": [
+          "Batsman",
+          "Bowler"
+        ]
+      },
+      "updated_at": {
+        "type": "datetime",
+        "description": "Stores the timestamp of the last update to the player's record. Data type: datetime. This is important for tracking changes and ensuring data integrity.",
+        "sample_values": [
+          "2020-05-31 17:53:56",
+          "2020-05-31 17:54:32"
+        ]
+      }
+    },
+    "sample_rows": [
+      {
+        "country_id": "98",
+        "firstname": "Alex",
+        "lastname": "Bleakley",
+        "fullname": "Alex Bleakley",
+        "image_path": "https://cdn.sportmonks.com/images/cricket/placeholder.png",
+        "dateofbirth": "1991-05-29",
+        "gender": "m",
+        "battingstyle": "right-hand-bat",
+        "bowlingstyle": "right-arm-fast-medium",
+        "position__resource": "positions",
+        "position__id": "1",
+        "position__name": "Batsman"
+      },
+      {
+        "country_id": "98",
+        "firstname": "Todd",
+        "lastname": "McCann",
+        "fullname": "Todd McCann",
+        "image_path": "https://cdn.sportmonks.com/images/cricket/placeholder.png",
+        "dateofbirth": "1988-10-07",
+        "gender": "m",
+        "battingstyle": "right-hand-bat",
+        "bowlingstyle": "right-arm-fast-medium",
+        "position__resource": "positions",
+        "position__id": "1",
+        "position__name": "Batsman"
+      }
+    ]
+  },
+  "history2.positions": {
+    "table_summary": "The history2.positions table stores the different player positions or roles in a cricket match, such as Batsman and Bowler. This is essential for categorizing player statistics and performance based on their roles during matches.",
+    "columns": {
+      "name": {
+        "type": "varchar",
+        "description": "varchar - Stores the name of the position (e.g., Batsman, Bowler). This column is important for understanding player roles but should not be used as a unique identifier since multiple positions can exist.",
+        "sample_values": [
+          "Allrounder",
+          "Batsman"
+        ]
+      }
+    },
+    "sample_rows": [
+      {
+        "name": "Batsman"
+      },
+      {
+        "name": "Bowler"
+      }
+    ]
+  },
+  "history2.scores": {
+    "table_summary": "The history2.scores table stores detailed information about individual scoring events in cricket matches, capturing the outcomes of each delivery (ball) bowled. This includes runs scored, extras, and whether a wicket was taken, providing a granular view of match progress and player performance.",
+    "columns": {
+      "name": {
+        "type": "varchar",
+        "description": "Describes the specific scoring event, such as '1 Bye' or '1 Bye + Retired Hurt'. Data type: varchar.",
+        "sample_values": [
+          "1 Bye",
+          "1 Bye + Retired Hurt"
+        ]
+      },
+      "runs": {
+        "type": "bigint",
+        "description": "The number of runs scored from this delivery, which can include runs from extras. Data type: bigint.",
+        "sample_values": [
+          "0",
+          "1"
+        ]
+      },
+      "four": {
+        "type": "bit",
+        "description": "Indicates whether the scoring event included a four (boundary). Data type: bit (True/False).",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "six": {
+        "type": "bit",
+        "description": "Indicates whether the scoring event included a six (boundary). Data type: bit (True/False).",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "bye": {
+        "type": "bigint",
+        "description": "The number of runs scored as byes, which are runs not credited to the batsman. Data type: bigint.",
+        "sample_values": [
+          "0",
+          "1"
+        ]
+      },
+      "leg_bye": {
+        "type": "bigint",
+        "description": "The number of runs scored as leg byes, which are runs not credited to the batsman but taken off the body or clothing. Data type: bigint.",
+        "sample_values": [
+          "0",
+          "1"
+        ]
+      },
+      "noball": {
+        "type": "bigint",
+        "description": "The number of no-balls bowled in this delivery. Data type: bigint.",
+        "sample_values": [
+          "0",
+          "1"
+        ]
+      },
+      "noball_runs": {
+        "type": "bigint",
+        "description": "The number of runs scored from no-balls, which are added to the team's total. Data type: bigint.",
+        "sample_values": [
+          "0",
+          "1"
+        ]
+      },
+      "is_wicket": {
+        "type": "bit",
+        "description": "Indicates whether this delivery resulted in a wicket being taken. Data type: bit (True/False).",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "ball": {
+        "type": "bit",
+        "description": "Indicates whether this entry corresponds to a valid ball bowled. Data type: bit (True/False).",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "out": {
+        "type": "bit",
+        "description": "Indicates whether the batsman was out as a result of this delivery. Data type: bit (True/False).",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      }
+    },
+    "sample_rows": [
+      {
+        "name": "1 Bye",
+        "runs": "0",
+        "four": "False",
+        "six": "False",
+        "bye": "1",
+        "leg_bye": "0",
+        "noball": "0",
+        "noball_runs": "0",
+        "is_wicket": "False",
+        "ball": "True",
+        "out": "False"
+      },
+      {
+        "name": "1 Bye + Retired Hurt",
+        "runs": "0",
+        "four": "False",
+        "six": "False",
+        "bye": "1",
+        "leg_bye": "0",
+        "noball": "0",
+        "noball_runs": "0",
+        "is_wicket": "False",
+        "ball": "True",
+        "out": "False"
+      }
+    ]
+  },
+  "history2.seasons": {
+    "table_summary": "The seasons table stores information about different cricket seasons associated with various leagues. Each entry represents a specific season, identified by a unique ID, and includes details such as the league it belongs to, the name of the season, and relevant timestamps for updates and creation. This table is essential for linking match data to the appropriate season context in a cricket statistics database.",
+    "columns": {
+      "league_id": {
+        "type": "bigint",
+        "description": "Stores the identifier for the league associated with the season as a bigint. This acts as a foreign key linking to a leagues table, allowing for the association of seasons with specific leagues. Misuse may occur if the relationship to leagues is not properly understood.",
+        "sample_values": [
+          "1",
+          "2"
+        ]
+      },
+      "name": {
+        "type": "varchar",
+        "description": "Stores the name of the season as a varchar, typically representing the year of the season. This column is important for human-readable references and should not be confused with the ID.",
+        "sample_values": [
+          "2003",
+          "2005"
+        ]
+      },
+      "code": {
+        "type": "varchar",
+        "description": "Stores a code representing the season as a varchar. This is often the same as the name and serves as a shorthand reference. It is not a primary key and should be used carefully to avoid redundancy.",
+        "sample_values": [
+          "2003",
+          "2005"
+        ]
+      },
+      "updated_at": {
+        "type": "datetime",
+        "description": "Stores the timestamp of the last update to the record as a datetime. This is useful for tracking changes over time but should not be relied upon for determining the season's validity.",
+        "sample_values": [
+          "2018-10-11 11:10:22",
+          "2018-10-10 15:16:21"
+        ]
+      }
+    },
+    "sample_rows": [
+      {
+        "league_id": "1",
+        "name": "2019",
+        "code": "2019"
+      },
+      {
+        "league_id": "2",
+        "name": "2018",
+        "code": "2018"
+      }
+    ]
+  },
+  "history2.stages": {
+    "table_summary": "The 'history2.stages' table stores information about different stages or groups within a cricket league for a specific season. Each entry represents a distinct stage, such as a group or knockout round, and includes details like the league and season it belongs to, as well as its name and code. This table is essential for organizing and categorizing matches within leagues, allowing for better tracking of standings and progress throughout the season.",
+    "columns": {
+      "league_id": {
+        "type": "bigint",
+        "description": "Stores the identifier for the league to which the stage belongs, which is a bigint. This acts as a foreign key linking to a leagues table, allowing for the association of stages with their respective leagues.",
+        "sample_values": [
+          "16",
+          "13"
+        ]
+      },
+      "season_id": {
+        "type": "bigint",
+        "description": "Stores the identifier for the season, which is a bigint. This serves as a foreign key linking to a seasons table, providing context for which season the stage is part of.",
+        "sample_values": [
+          "19",
+          "18"
+        ]
+      },
+      "name": {
+        "type": "varchar",
+        "description": "Stores the name of the stage, which is a varchar. This is used for display purposes and helps users understand the context of the stage. It should be descriptive and unique within the league.",
+        "sample_values": [
+          "Group A",
+          "Group B"
+        ]
+      },
+      "code": {
+        "type": "varchar",
+        "description": "Stores a short code for the stage, which is a varchar. This is often used for quick references and should be unique within the league. It is important not to confuse this with the name.",
+        "sample_values": [
+          "GA",
+          "GB"
+        ]
+      },
+      "type": {
+        "type": "varchar",
+        "description": "Stores the type of stage, which is a varchar. This indicates whether the stage is a league, knockout, etc. It is important for filtering stages based on their type.",
+        "sample_values": [
+          "league"
+        ]
+      },
+      "standings": {
+        "type": "bit",
+        "description": "Stores a boolean value (bit) indicating whether standings are available for this stage. This is important for determining if the stage has a competitive aspect that requires tracking of team performances.",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "updated_at": {
+        "type": "datetime",
+        "description": "Stores the timestamp of the last update to the stage record, which is a datetime. This is useful for auditing changes and ensuring data freshness.",
+        "sample_values": [
+          "2018-10-10 16:58:18",
+          "2018-10-10 16:58:34"
+        ]
+      }
+    },
+    "sample_rows": [
+      {
+        "league_id": "16",
+        "season_id": "19",
+        "name": "Group A",
+        "code": "GA",
+        "type": "league",
+        "standings": "True"
+      },
+      {
+        "league_id": "16",
+        "season_id": "19",
+        "name": "Group B",
+        "code": "GB",
+        "type": "league",
+        "standings": "True"
+      }
+    ]
+  },
+  "history2.teams": {
+    "table_summary": "The 'history2.teams' table stores information about cricket teams, including both national teams and franchise teams. It serves as a reference for identifying teams in various cricket statistics and match records within the database.",
+    "columns": {
+      "id": {
+        "type": "bigint",
+        "description": "Primary key for the teams table. Use this to join with team_id in other tables (e.g., fixtures__runs.team_id, fixtures__bowling.team_id). Example: SELECT id FROM history2.teams WHERE name = 'Kolkata Knight Riders'",
+        "sample_values": [
+          "1",
+          "2"
+        ]
+      },
+      "name": {
+        "type": "varchar",
+        "description": "Stores the full name of the team as a varchar. This is used for display purposes and is not a primary key.",
+        "sample_values": [
+          "Pakistan",
+          "Chennai Super Kings"
+        ]
+      },
+      "code": {
+        "type": "varchar",
+        "description": "Stores the abbreviated code for the team as a varchar (e.g., 'PAK' for Pakistan). This is often used in queries for filtering or displaying team information.",
+        "sample_values": [
+          "PAK",
+          "CSK"
+        ]
+      },
+      "image_path": {
+        "type": "varchar",
+        "description": "Stores the URL of the team's logo or image as a varchar. This is used for visual representation in applications but does not relate to other tables.",
+        "sample_values": [
+          "https://cdn.sportmonks.com/images/cricket/teams/1/1.png",
+          "https://cdn.sportmonks.com/images/cricket/teams/2/2.png"
+        ]
+      },
+      "country_id": {
+        "type": "bigint",
+        "description": "Stores the unique identifier for the country associated with the team as a bigint. This may serve as a foreign key linking to a countries table, but care should be taken to ensure that the country_id exists in the referenced table.",
+        "sample_values": [
+          "190324",
+          "153732"
+        ]
+      },
+      "national_team": {
+        "type": "bit",
+        "description": "Stores a boolean value (bit) indicating whether the team is a national team (True) or a franchise team (False). This is important for distinguishing between different types of teams in queries.",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "updated_at": {
+        "type": "datetime",
+        "description": "Stores the timestamp of the last update to the team's information as a datetime. This is useful for tracking changes but does not relate to other tables.",
+        "sample_values": [
+          "2018-11-29 11:47:20",
+          "2022-03-03 15:05:47"
+        ]
+      },
+      "\u274c NO 'team_id'": "The primary key in teams table is 'id', NOT 'team_id'. Use: SELECT id FROM history2.teams WHERE name = 'Team Name'",
+      "\u274c NO 'player_id'": "teams table has no player_id. To find players, use history2.players table"
+    },
+    "sample_rows": [
+      {
+        "name": "Pakistan",
+        "code": "PAK",
+        "image_path": "https://cdn.sportmonks.com/images/cricket/teams/1/1.png",
+        "country_id": "190324",
+        "national_team": "True"
+      },
+      {
+        "name": "Chennai Super Kings",
+        "code": "CSK",
+        "image_path": "https://cdn.sportmonks.com/images/cricket/teams/2/2.png",
+        "country_id": "153732",
+        "national_team": "False"
+      }
+    ]
+  },
+  "history2.venues": {
+    "table_summary": "The history2.venues table stores information about cricket venues used in matches, including their names, locations, capacities, and features such as floodlights. This data is crucial for understanding where matches are played and the conditions of those venues.",
+    "columns": {
+      "country_id": {
+        "type": "bigint",
+        "description": "Stores the identifier for the country where the venue is located. Data type: bigint. This serves as a foreign key that relates to a countries table, linking venues to their respective countries.",
+        "sample_values": [
+          "98",
+          "155043"
+        ]
+      },
+      "name": {
+        "type": "varchar",
+        "description": "Stores the name of the venue. Data type: varchar. This is essential for identifying the venue in match records and should be used consistently across queries.",
+        "sample_values": [
+          "Adelaide Oval",
+          "W.A.C.A. Ground"
+        ]
+      },
+      "city": {
+        "type": "varchar",
+        "description": "Stores the city where the venue is located. Data type: varchar. This provides geographical context for the venue and can be used in filtering queries.",
+        "sample_values": [
+          "Adelaide",
+          "East Perth,  Perth, Western Australia"
+        ]
+      },
+      "image_path": {
+        "type": "varchar",
+        "description": "Stores the URL for an image of the venue. Data type: varchar. This is useful for displaying venue information in applications but should not be relied upon for data integrity.",
+        "sample_values": [
+          "https://cdn.sportmonks.com/images/cricket/venues/1/1.png",
+          "https://cdn.sportmonks.com/images/cricket/venues/2/2.png"
+        ]
+      },
+      "capacity": {
+        "type": "bigint",
+        "description": "Stores the maximum number of spectators the venue can accommodate. Data type: bigint. This metric is important for understanding venue size and should be used in capacity-related queries.",
+        "sample_values": [
+          "53583",
+          "18000"
+        ]
+      },
+      "floodlight": {
+        "type": "bit",
+        "description": "Stores a boolean value indicating whether the venue has floodlights. Data type: bit. This is important for determining if matches can be played at night and should be checked when scheduling matches.",
+        "sample_values": [
+          "False",
+          "True"
+        ]
+      },
+      "updated_at": {
+        "type": "datetime",
+        "description": "Stores the timestamp of the last update to the venue record. Data type: datetime. This is useful for tracking changes but should not be used as a primary reference for data accuracy.",
+        "sample_values": [
+          "2018-11-14 07:43:05",
+          "2018-11-14 17:47:15"
+        ]
+      }
+    },
+    "sample_rows": [
+      {
+        "country_id": "98",
+        "name": "Adelaide Oval",
+        "city": "Adelaide",
+        "image_path": "https://cdn.sportmonks.com/images/cricket/venues/1/1.png",
+        "capacity": "53583",
+        "floodlight": "True"
+      },
+      {
+        "country_id": "98",
+        "name": "W.A.C.A. Ground",
+        "city": "East Perth,  Perth, Western Australia",
+        "image_path": "https://cdn.sportmonks.com/images/cricket/venues/2/2.png",
+        "capacity": "18000",
+        "floodlight": "True"
+      }
+    ]
   }
 }

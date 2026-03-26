@@ -138,9 +138,10 @@ def generate_valid_statements(narrative, game_state_dict):
     game_state_array = np.array([game_state[k] for k in keys], dtype=float)
     results = process_sentences(sentences, game_state_array)
 
+    # predict_proba returns [P(invalid), P(valid)] — use index [1] for valid class
     valid_statements = [
         result for result in results
-        if result["probabilities"].get("Random Forest", [0])[0] > config.statement.RANDOM_FOREST_THRESHOLD
+        if result["probabilities"].get("Random Forest", [0, 0])[1] > config.statement.RANDOM_FOREST_THRESHOLD
     ]
 
     logger.info(f"ML classifier: {len(valid_statements)}/{len(results)} questions passed (threshold: {config.statement.RANDOM_FOREST_THRESHOLD})")
