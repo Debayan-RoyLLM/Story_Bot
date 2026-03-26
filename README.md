@@ -315,6 +315,23 @@ SQL_SERVER_DATABASE=sportmonk
 SQL_SERVER_DRIVER=ODBC Driver 18 for SQL Server
 ```
 
+### Generate Knowledge Base (Metadata)
+
+Before running the server for the first time (or after any database schema changes), generate the metadata that powers SQL generation:
+
+```bash
+python -m app.services.config.enrich_metadata
+```
+
+This script:
+1. Auto-discovers all tables in the `history2` schema from the database
+2. Reads column names, types, and sample values
+3. Calls GPT-4o-mini to generate table summaries and column descriptions
+4. Auto-derives forbidden column entries (e.g., `score` vs `score__runs` disambiguation)
+5. Outputs `app/services/config/metadata.json`
+
+Re-run whenever tables/columns are added or the schema changes.
+
 ### Run the Server
 
 ```bash
