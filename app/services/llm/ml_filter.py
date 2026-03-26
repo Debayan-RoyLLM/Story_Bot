@@ -30,19 +30,21 @@ pca_model = None
 logistic_model = None
 random_forest_model = None
 xgb_model = None
+_ml_models_loaded = False
 
 try:
     pca_model = joblib.load(config.ml.PCA_MODEL_PATH)
     logistic_model = joblib.load(config.ml.LOGISTIC_MODEL_PATH)
     random_forest_model = joblib.load(config.ml.RANDOM_FOREST_MODEL_PATH)
     xgb_model = joblib.load(config.ml.XGB_MODEL_PATH)
+    _ml_models_loaded = True
     logger.info("ML models loaded successfully (BERT, PCA, Logistic, Random Forest, XGBoost)")
 except FileNotFoundError as e:
-    logger.warning(f"ML model files not found: {e}")
-    logger.warning("ML-based question classification will be disabled")
+    logger.error(f"ML model files not found: {e}")
+    logger.error("ML-based question filtering is DISABLED — all questions will pass unfiltered")
 except Exception as e:
     logger.error(f"Error loading ML models: {e}")
-    logger.warning("ML-based question classification will be disabled")
+    logger.error("ML-based question filtering is DISABLED — all questions will pass unfiltered")
 
 
 def get_bert_embedding(text):
@@ -67,13 +69,8 @@ def classify_with_models(combined_input):
     Output: {"Logistic Regression": [0.3, 0.7], "Random Forest": [0.4, 0.6], "XGBoost": [0.2, 0.8]}
             probability of [invalid, valid]
     """
-    if not all([logistic_model, random_forest_model, xgb_model]):
-        logger.warning("ML models not loaded, returning default probabilities")
-        return {
-            "Logistic Regression": [0.0, 1.0],
-            "Random Forest": [0.0, 1.0],
-            "XGBoost": [0.0, 1.0]
-        }
+    if not _ml_models_loaded:
+        return None
 
     models = {
         "Logistic Regression": logistic_model,
@@ -132,6 +129,10 @@ def generate_valid_statements(narrative, game_state_dict):
     """
     raw_questions = generate_questions(narrative)
     sentences = stat_questions(raw_questions)
+
+    if not _ml_models_loaded:
+        logger.warning(f"ML filtering skipped (models not loaded) — returning all {len(sentences)} questions unfiltered")
+        return [{"sentence": s, "probabilities": None} for s in sentences]
 
     keys = config.statement.GAME_STATE_KEYS
     game_state = {k: game_state_dict.get(k, 0) for k in keys}

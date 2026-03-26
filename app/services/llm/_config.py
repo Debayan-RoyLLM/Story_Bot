@@ -8,11 +8,10 @@ their own connections.
 
 import os
 import logging
-from urllib.parse import quote
-from sqlalchemy import create_engine
 from langchain_openai import ChatOpenAI
 
 from app.services.config.settings import Config
+from app.db.database import engine  # single shared engine
 
 # ── Config ───────────────────────────────────────────────────────
 config = Config()
@@ -27,10 +26,6 @@ logger = logging.getLogger("app.services.llm")
 
 # ── API Keys ─────────────────────────────────────────────────────
 api_key_openai = config.api.get_openai_api_key()
-password = config.api.get_sql_password()
-
-# ── Database Engine (shared by query execution + validator dry-run)
-engine = create_engine(config.db.get_connection_string(password))
 logger.info("Database connection established successfully")
 
 # ── LangChain LLM (for structured output in graph nodes) ─────────

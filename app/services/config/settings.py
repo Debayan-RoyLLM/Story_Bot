@@ -20,11 +20,13 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 class DatabaseConfig:
     """Database connection configuration."""
 
-    USERNAME = "SA"
-    SERVER = "localhost"
-    DATABASE = "sportmonk"
-    DRIVER = "ODBC Driver 18 for SQL Server"
+    USERNAME = os.environ.get("SQL_SERVER_USERNAME", "SA")
+    SERVER = os.environ.get("SQL_SERVER_HOST", "localhost")
+    PORT = os.environ.get("SQL_SERVER_PORT", "1433")
+    DATABASE = os.environ.get("SQL_SERVER_DATABASE", "sportmonk")
+    DRIVER = os.environ.get("SQL_SERVER_DRIVER", "ODBC Driver 18 for SQL Server")
     DIALECT = "mssql"
+    CONNECTION_TIMEOUT = 30
 
     @staticmethod
     def get_connection_string(password: str) -> str:
@@ -33,8 +35,10 @@ class DatabaseConfig:
         encoded_pass = quote(password)
         return (
             f"mssql+pyodbc://{DatabaseConfig.USERNAME}:{encoded_pass}@"
-            f"{DatabaseConfig.SERVER}/{DatabaseConfig.DATABASE}?"
-            f"driver={DatabaseConfig.DRIVER}&TrustServerCertificate=yes"
+            f"{DatabaseConfig.SERVER}:{DatabaseConfig.PORT}/{DatabaseConfig.DATABASE}?"
+            f"driver={DatabaseConfig.DRIVER}"
+            f"&TrustServerCertificate=yes"
+            f"&Connection Timeout={DatabaseConfig.CONNECTION_TIMEOUT}"
         )
 
 

@@ -1,20 +1,12 @@
-import os
-from urllib.parse import quote
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from dotenv import load_dotenv
 
-load_dotenv()
+from app.services.config.settings import Config
 
-_password = quote(os.environ.get("SQL_SERVER_PASSWORD", ""))
+_config = Config()
+_password = _config.api.get_sql_password()
 
-DATABASE_URL = (
-    f"mssql+pyodbc://SA:{_password}@127.0.0.1:1433/sportmonk"
-    "?driver=ODBC+Driver+17+for+SQL+Server"
-    "&Encrypt=no"
-    "&TrustServerCertificate=yes"
-    "&Connection Timeout=30"
-)
+DATABASE_URL = _config.db.get_connection_string(_password)
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)

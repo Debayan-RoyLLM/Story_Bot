@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from app.Queries.fixture_queries import (
     Fixture_query, Info_query, Player2_name,
     Second_Team, Batting_Team_id, get_bowling_team_total,
-    get_bowling_team_id, get_current_run_ball_player1, bowler_wickets, last_two_balls,
-    team_wicket)
+    get_bowling_team_id, get_current_run_ball_player1, get_current_run_ball_player2,
+    bowler_wickets, last_two_balls, team_wicket)
 
 def get_latest_fixture(
     db: Session,
@@ -123,7 +123,7 @@ def get_current_player_run(db: Session, fixture_id: int, batsman_id: int, curren
 
 def get_current_player2_run(db: Session, fixture_id: int, batsman_id: int, current_ball: float):
     row = db.execute(
-        get_current_run_ball_player1,
+        get_current_run_ball_player2,
         {
             "fixture_id": fixture_id,
             "batsman_id": batsman_id,
