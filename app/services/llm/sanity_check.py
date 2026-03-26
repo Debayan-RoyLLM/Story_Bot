@@ -82,6 +82,15 @@ def _is_player_query(question):
 def _check_value_limits(value, question_lower, is_player):
     """Check a single numeric value against cricket domain limits."""
 
+    # Negative values for counts/totals are always wrong
+    count_keywords = ["dot ball", "wicket", "boundar", "runs", "score", "fours", "sixes"]
+    if value < 0 and any(kw in question_lower for kw in count_keywords):
+        return (
+            f"Result {value} is negative for a count/total metric, which is impossible. "
+            f"Likely cause: incorrect arithmetic in the query (e.g., computing dot balls "
+            f"via subtraction instead of COUNT WHERE score__runs = 0)."
+        )
+
     # Check against main limits
     for keyword, limit in SANITY_LIMITS.items():
         if keyword in question_lower and abs(value) > limit:
@@ -92,13 +101,17 @@ def _check_value_limits(value, question_lower, is_player):
                 f"without proper GROUP BY fixture_id, or missing WHERE filters."
             )
 
-    # Per-player stricter checks
+    # Per-player stricter checks — scale limit by number of matches mentioned
     if is_player:
+        # Try to detect "last N matches" from question
+        match_count_match = re.search(r'last\s+(\d+)', question_lower)
+        match_multiplier = int(match_count_match.group(1)) if match_count_match else 5
+
         for keyword, limit in PER_PLAYER_MATCH_LIMITS.items():
-            if keyword in question_lower and abs(value) > limit * 5:
+            if keyword in question_lower and abs(value) > limit * match_multiplier:
                 return (
                     f"Result {value} is unrealistic for a single player's '{keyword}' "
-                    f"(expected max ~{limit} per match, ~{limit * 5} across 5 matches). "
+                    f"(expected max ~{limit} per match, ~{limit * match_multiplier} across {match_multiplier} matches). "
                     f"Likely cause: query is summing across all players or all matches "
                     f"without filtering to the specific player."
                 )

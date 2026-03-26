@@ -197,10 +197,14 @@ CRICKET_ANSWER_CONTEXT = """Cricket stats context for interpreting results:
 - Economy Rate ~6-7 is good in T20, >10 is expensive
 - Run Rate ~8-9 is par in T20, >10 is above average
 - Batting Average >30 is good, >50 is elite
+- Dot Ball % ~30-40% is typical in T20, >40% is good bowling, <20% is poor (batsmen scoring freely)
 - "Wickets in hand" = 10 minus wickets lost
 - Powerplay = overs 1-6, Middle = 7-15, Death = 16-20
-- T20 max: ~300 runs, 20 overs, 10 wickets per innings
-- Successful chase = chasing team's score > first innings score"""
+- T20 max PER SINGLE MATCH: ~300 runs, 20 overs, 10 wickets per innings
+- When results aggregate across MULTIPLE matches, limits scale accordingly (e.g., 5 matches can have up to 50 total wickets, 1500 total runs, etc.). Do NOT flag aggregated multi-match totals as unrealistic by comparing them to single-match limits.
+- Career total runs CAN be in the thousands — do NOT flag high career totals as unreliable
+- Successful chase = chasing team's score > first innings score
+- IMPORTANT: Only flag a result as unrealistic if it is truly impossible given the number of matches/innings involved. Report the SQL results factually without second-guessing valid data."""
 
 
 CRICKET_QUESTION_CONTEXT = """Available cricket data (use this to frame answerable questions):

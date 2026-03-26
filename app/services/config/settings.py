@@ -72,7 +72,7 @@ class StatementConfig:
     """Statement generation configuration."""
 
     REQUIRED_VALID_STATEMENTS = 8
-    RANDOM_FOREST_THRESHOLD = 0.6  # Probability threshold for valid statements
+    RANDOM_FOREST_THRESHOLD = 0.65  # Probability threshold for valid statements
 
     # Game state keys for BERT embedding
     GAME_STATE_KEYS = [

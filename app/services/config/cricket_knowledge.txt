@@ -105,10 +105,16 @@ REQUIRED RUN RATE:
   - balls remaining = total balls in innings - balls bowled
   - This is a COMPUTED metric, not stored in a column
 
+DOT BALL COUNT:
+  = number of balls where batsman scored 0 runs
+  ✅ SELECT COUNT(*) FROM fixtures__balls WHERE score__runs = 0 AND bowler__fullname = 'X'
+  ❌ Do NOT use arithmetic like (total_balls - runs_conceded + wickets) — this is WRONG
+  ❌ Do NOT compute dot balls indirectly — always filter score__runs = 0
+
 DOT BALL PERCENTAGE:
   = balls with 0 runs / total balls × 100
   ✅ CAST(SUM(CASE WHEN score__runs = 0 THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(COUNT(*), 0) * 100
-  Context: Dot ball % ~30-40% is typical in T20
+  Context: Dot ball % ~30-40% is typical in T20, >40% is good, <20% is poor
 
 BOUNDARY PERCENTAGE:
   = balls that were 4s or 6s / total balls × 100
@@ -449,3 +455,47 @@ If you MUST join, always GROUP BY fixture_id first in a CTE:
 
 "finisher" → batsman who bats in death overs (ball >= 15.1)
   ✅ WHERE ball >= 15.1 AND batsman__fullname = 'Player'
+
+====================================
+11. CRITICAL ANTI-PATTERNS (COMMON LLM MISTAKES)
+====================================
+
+❌ ANTI-PATTERN 1: "Highest score" using MAX(score__runs)
+  MAX(score__runs) returns the highest runs off a SINGLE BALL (max 6).
+  To get highest INNINGS SCORE, aggregate per fixture first:
+  ✅ SELECT MAX(innings_runs) FROM (
+       SELECT SUM(score__runs) AS innings_runs
+       FROM fixtures__balls WHERE batsman__fullname = 'X'
+       GROUP BY fixture_id
+     ) sub
+
+❌ ANTI-PATTERN 2: Strike rate excluding dot balls
+  Strike rate MUST include ALL balls faced, including dot balls.
+  ✅ CAST(SUM(score__runs) AS FLOAT) / NULLIF(COUNT(*), 0) * 100
+  ❌ WHERE score__runs > 0 — this filters out dot balls and inflates the SR
+
+❌ ANTI-PATTERN 3: Batting average via JOIN with fixtures__batting
+  Do NOT join fixtures__balls with fixtures__batting to compute batting average.
+  fixtures__balls already has score__runs and score__out — compute directly:
+  ✅ CAST(SUM(score__runs) AS FLOAT) / NULLIF(SUM(CAST(score__out AS INT)), 0)
+     FROM fixtures__balls WHERE batsman__fullname = 'X'
+  ❌ JOIN fixtures__batting — causes row duplication and wrong results
+
+❌ ANTI-PATTERN 4: Bowler stats across matches missing player filter
+  When querying "bowler X's stats in last N matches" using fixtures__bowling:
+  The final aggregation MUST filter to the specific bowler's player_id.
+  ✅ WHERE b.player_id = (SELECT TOP 1 bowler_id FROM fixtures__balls WHERE bowler__fullname = 'X')
+  ❌ Only filtering fixture_ids without filtering player_id in the bowling table
+     → This sums ALL bowlers' wickets in those fixtures, not just the target bowler
+
+❌ ANTI-PATTERN 5: Using fixtures__bowling/batting when fixtures__balls suffices
+  For "last N matches" bowler wickets, prefer computing from fixtures__balls directly:
+  ✅ WITH LastN AS (
+       SELECT TOP 5 fixture_id FROM fixtures__balls
+       WHERE bowler__fullname = 'X' GROUP BY fixture_id ORDER BY fixture_id DESC
+     )
+     SELECT SUM(CAST(score__is_wicket AS INT)) AS total_wickets,
+            SUM(score__runs) AS total_runs_conceded
+     FROM fixtures__balls WHERE bowler__fullname = 'X'
+     AND fixture_id IN (SELECT fixture_id FROM LastN)
+  This avoids the player_id matching complexity of fixtures__bowling.
