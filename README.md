@@ -119,7 +119,7 @@ ai_storyboard/
 │       │   ├── template_fixes.py            # Regex-based SQL error corrections
 │       │   ├── sanity_check.py              # Domain validation of query results
 │       │   ├── query_safety.py              # Block non-SELECT queries
-│       │   ├── _config.py                   # Shared singletons (DB engine, LLM, logger)
+│       │   ├── _config.py                   # Shared singletons (LLM, logger; reuses DB engine from database.py)
 │       │   ├── _cache.py                    # Query result cache by question text
 │       │   └── din_sql/
 │       │       ├── schema_linker.py         # LLM-based table/column selection
@@ -170,6 +170,8 @@ Each generated question passes through a multi-stage classifier:
    - XGBoost
 5. Questions failing the threshold are discarded (typically ~3–4 of 8)
 
+**Graceful degradation**: If ML model files are not present, the filter is skipped entirely and all questions pass through unfiltered. This is logged as an ERROR at startup so the disabled state is clearly visible. Questions returned without filtering have `probabilities: None` so downstream consumers can distinguish filtered from unfiltered results.
+
 ### 4. DIN-SQL Planning
 
 Valid questions go through the **DIN-SQL** (Decomposed In-context SQL) pipeline:
@@ -192,7 +194,14 @@ Valid questions go through the **DIN-SQL** (Decomposed In-context SQL) pipeline:
 | DB Dry-Run | `db_validation.py` | Syntax errors, invalid columns, type mismatches (`SET NOEXEC ON`) |
 | Metadata Checks | `metadata_checks.py` | Column-table mismatches (column used with wrong table) |
 | SQL Checks | `sql_checks.py` | Division by zero, missing WHERE clauses, GROUP BY consistency |
-| Safety Guards | `query_safety.py` | Block INSERT/UPDATE/DELETE/DROP statements |
+| Safety Guards | `query_safety.py` | Block dangerous operations (see below) |
+
+**Safety guards** block queries before execution by:
+- Stripping SQL comments (`/* */`, `--`) and string literals to prevent bypass
+- Requiring queries start with `SELECT` or `WITH`
+- Blocking destructive keywords: `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `TRUNCATE`, `MERGE`, `CREATE`, `EXEC/EXECUTE`, `GRANT`, `REVOKE`, `DENY`, `BACKUP`, `RESTORE`, `SHUTDOWN`, `WAITFOR`, `OPENROWSET`, `OPENQUERY`
+- Blocking dangerous system objects: `xp_cmdshell`, `sp_OACreate`, `sp_configure`, `INFORMATION_SCHEMA`
+- Smart identifier detection to avoid false positives (e.g., `updated_at` containing `UPDATE`)
 
 **Error recovery**: failed validation → try template fix → if still failing, regenerate with LLM (up to 2 retries, error message included in prompt).
 
@@ -261,7 +270,7 @@ Configuration is centralized in `app/services/config/settings.py`:
 
 | Config Class | Key Settings |
 |-------------|--------------|
-| `DatabaseConfig` | SQL Server host, port, database name, ODBC driver |
+| `DatabaseConfig` | SQL Server host, port, database name, ODBC driver (all env-var overridable) |
 | `MLModelConfig` | BERT model name, PCA dimensions (59), model file paths |
 | `QueryConfig` | Query timeout (30s), max display rows (10), LLM model name |
 | `StatementConfig` | Required valid statements (8), RF threshold (0.6), game state feature count (11) |
@@ -296,7 +305,14 @@ Create a `.env` file in the project root:
 ```env
 OPENAI_API_KEY=your-openai-api-key
 SQL_SERVER_PASSWORD=your-sql-server-password
-LANGSMITH_API_KEY=your-langsmith-key  # optional, for tracing
+LANGSMITH_API_KEY=your-langsmith-key          # optional, for tracing
+
+# Optional database overrides (defaults shown):
+SQL_SERVER_USERNAME=SA
+SQL_SERVER_HOST=localhost
+SQL_SERVER_PORT=1433
+SQL_SERVER_DATABASE=sportmonk
+SQL_SERVER_DRIVER=ODBC Driver 18 for SQL Server
 ```
 
 ### Run the Server
@@ -322,7 +338,9 @@ This endpoint:
 2. Iterates through all 120 balls of the T20 match
 3. Every 5 balls, runs the full AI pipeline
 4. Writes results to `data/llm_outputs.csv`
-5. Returns the compiled statistics
+5. Returns the compiled statistics and any per-ball errors
+
+**Error handling**: Returns `404` if no fixture is found. Individual ball failures are caught and logged without aborting the match — errors are collected and returned in the response `errors` array.
 
 ---
 
