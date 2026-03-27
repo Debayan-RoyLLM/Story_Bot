@@ -24,7 +24,7 @@ from app.functions.fixtures_functions import (
 
 router = APIRouter(prefix="/fixtures", tags=["Fixtures"])
 
-CSV_PATH = Path("data/llm_outputs.csv")
+CSV_PATH = Path("data/llm_outputs_01.csv")
 CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
@@ -50,13 +50,8 @@ def _write_csv(fixture_id, ball_no, statements_output):
             ])
 
 
-@router.get("/latest")
-def latest_fixture(country_id: int, league_id: int, db: Session = Depends(get_db)):
-
-    fixture_id = get_latest_fixture(db, country_id, league_id)
-    if not fixture_id:
-        raise HTTPException(status_code=404, detail="No fixture found")
-
+def _run_fixture(fixture_id: int, db: Session):
+    """Core logic to process a fixture by its ID."""
     narrative_rows = []
     game_state_rows = []
     errors = []
@@ -176,7 +171,7 @@ def latest_fixture(country_id: int, league_id: int, db: Session = Depends(get_db
         if final_narrative:
             from app.services.llm import run_statements, graph, metadata
 
-            statements_output = run_statements(final_narrative, final_game_state, graph, metadata)
+            statements_output = run_statements(final_narrative, final_game_state, graph, metadata, fixture_id=fixture_id)
             final_ball_no = narrative_rows[-1]["ball_no"] if narrative_rows else 0
             _write_csv(fixture_id, final_ball_no, statements_output)
     except Exception as e:
@@ -191,3 +186,14 @@ def latest_fixture(country_id: int, league_id: int, db: Session = Depends(get_db
         "llm_outputs": statements_output,
         "errors": errors
     }
+
+
+@router.get("/latest")
+def latest_fixture(country_id: int, league_id: int, fixture_id: int = None, db: Session = Depends(get_db)):
+
+    if not fixture_id:
+        fixture_id = get_latest_fixture(db, country_id, league_id)
+        if not fixture_id:
+            raise HTTPException(status_code=404, detail="No fixture found")
+
+    return _run_fixture(fixture_id, db)
