@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import csv
@@ -8,6 +9,7 @@ logger = logging.getLogger("app.services.fixtures")
 
 from app.db.database import get_db
 from app.functions.fixtures_functions import (
+    get_fixture_by_names,
     get_latest_fixture,
     get_info,
     get_player2_name,
@@ -189,11 +191,34 @@ def _run_fixture(fixture_id: int, db: Session):
 
 
 @router.get("/latest")
-def latest_fixture(country_id: int, league_id: int, fixture_id: int = None, db: Session = Depends(get_db)):
+def latest_fixture(
+    country_id: Optional[int] = None,
+    league_id: Optional[int] = None,
+    fixture_id: Optional[int] = None,
+    country_name: Optional[str] = None,
+    league_code: Optional[str] = None,
+    season_code: Optional[str] = None,
+    localteam_code: Optional[str] = None,
+    visitorteam_code: Optional[str] = None,
+    round: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    # Name-based lookup
+    if not fixture_id and country_name and league_code and season_code and localteam_code and visitorteam_code:
+        fixture_id = get_fixture_by_names(db, country_name, league_code, season_code, localteam_code, visitorteam_code, round)
+        if not fixture_id:
+            raise HTTPException(status_code=404, detail="No fixture found for the given names")
 
-    if not fixture_id:
+    # ID-based lookup
+    if not fixture_id and country_id and league_id:
         fixture_id = get_latest_fixture(db, country_id, league_id)
         if not fixture_id:
             raise HTTPException(status_code=404, detail="No fixture found")
+
+    if not fixture_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide (country_name, league_code, season_code, localteam_code, visitorteam_code) or (country_id, league_id)"
+        )
 
     return _run_fixture(fixture_id, db)

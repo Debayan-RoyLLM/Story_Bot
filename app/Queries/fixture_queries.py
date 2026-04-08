@@ -143,3 +143,20 @@ team_wicket = text("""
               AND score__out = 1
               AND ball < :current_ball
         """)
+
+#-----------------------------------------------------------------------#
+#-----------------------------------------------------------------------#
+
+Fixture_by_names = text("""
+    SELECT MAX(f.id) AS fixture_id
+    FROM history2.fixtures f
+    JOIN history2.leagues l ON l.id = f.league_id
+    JOIN history2.countries c ON c.id = l.country_id
+    JOIN history2.seasons s ON s.id = f.season_id
+    WHERE c.name = :country_name
+      AND l.code = :league_code
+      AND s.code = :season_code
+      AND f.localteam__code = :localteam_code
+      AND f.visitorteam__code = :visitorteam_code
+      AND (:round IS NULL OR f.round = :round)
+""")

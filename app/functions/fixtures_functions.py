@@ -4,7 +4,22 @@ from app.Queries.fixture_queries import (
     Fixture_query, Info_query, Player2_name,
     Second_Team, Batting_Team_id, get_bowling_team_total,
     get_bowling_team_id, get_current_run_ball_player1, get_current_run_ball_player2,
-    bowler_wickets, last_two_balls, team_wicket)
+    bowler_wickets, last_two_balls, team_wicket, Fixture_by_names)
+
+def get_fixture_by_names(db: Session, country_name: str, league_code: str, season_code: str, localteam_code: str, visitorteam_code: str, round: str = None):
+    result = db.execute(
+        Fixture_by_names,
+        {
+            "country_name": country_name,
+            "league_code": league_code,
+            "season_code": season_code,
+            "localteam_code": localteam_code,
+            "visitorteam_code": visitorteam_code,
+            "round": round
+        }
+    ).fetchone()
+    return result.fixture_id if result else None
+
 
 def get_latest_fixture(
     db: Session,
