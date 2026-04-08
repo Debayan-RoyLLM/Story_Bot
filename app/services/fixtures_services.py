@@ -1,6 +1,8 @@
+import json
 import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 import csv
 from pathlib import Path
@@ -52,11 +54,16 @@ def _write_csv(fixture_id, ball_no, statements_output):
             ])
 
 
-def _run_fixture(fixture_id: int, db: Session):
-    """Core logic to process a fixture by its ID."""
+def _run_fixture_iter(fixture_id: int, db: Session):
+    """Generator that yields one event per 5-ball pipeline batch.
+
+    Event shapes:
+        {"type": "batch", "fixture_id", "ball_no", "over", "narrative", "llm_outputs", "final"?}
+        {"type": "error", "ball_no", "error"}
+        {"type": "done",  "fixture_id", "balls_simulated", "narratives_written", "game_states_written"}
+    """
     narrative_rows = []
     game_state_rows = []
-    errors = []
 
     total_balls = 120  # T20 match
 
@@ -154,14 +161,21 @@ def _run_fixture(fixture_id: int, db: Session):
 
                 statements_output = run_statements(narrative, game_state_rows[-1], graph, metadata, fixture_id=fixture_id)
                 _write_csv(fixture_id, ball_no, statements_output)
+                yield {
+                    "type": "batch",
+                    "fixture_id": fixture_id,
+                    "ball_no": ball_no,
+                    "over": over,
+                    "narrative": narrative,
+                    "llm_outputs": statements_output,
+                }
 
         except Exception as e:
             logger.error(f"Ball {ball_no}: error processing — {e}")
-            errors.append({"ball_no": ball_no, "error": str(e)})
+            yield {"type": "error", "ball_no": ball_no, "error": str(e)}
             continue
 
     # Final LLM run on last ball state
-    statements_output = []
     try:
         final_narrative = (
             narrative_rows[-1]["narrative"]
@@ -176,18 +190,89 @@ def _run_fixture(fixture_id: int, db: Session):
             statements_output = run_statements(final_narrative, final_game_state, graph, metadata, fixture_id=fixture_id)
             final_ball_no = narrative_rows[-1]["ball_no"] if narrative_rows else 0
             _write_csv(fixture_id, final_ball_no, statements_output)
+            yield {
+                "type": "batch",
+                "fixture_id": fixture_id,
+                "ball_no": final_ball_no,
+                "over": ball_to_over(final_ball_no) if final_ball_no else 0,
+                "narrative": final_narrative,
+                "llm_outputs": statements_output,
+                "final": True,
+            }
     except Exception as e:
         logger.error(f"Final LLM run failed: {e}")
-        errors.append({"ball_no": "final", "error": str(e)})
+        yield {"type": "error", "ball_no": "final", "error": str(e)}
 
-    return {
+    yield {
+        "type": "done",
         "fixture_id": fixture_id,
         "balls_simulated": len(narrative_rows),
         "narratives_written": len(narrative_rows),
         "game_states_written": len(game_state_rows),
-        "llm_outputs": statements_output,
-        "errors": errors
     }
+
+
+def _run_fixture(fixture_id: int, db: Session):
+    """Core logic to process a fixture by its ID. Collects every batch and
+    returns the final summary in one shot (used by the non-streaming endpoint).
+    """
+    last_outputs = []
+    errors = []
+    summary = {}
+
+    for evt in _run_fixture_iter(fixture_id, db):
+        t = evt.get("type")
+        if t == "batch":
+            last_outputs = evt.get("llm_outputs") or []
+        elif t == "error":
+            errors.append({"ball_no": evt.get("ball_no"), "error": evt.get("error")})
+        elif t == "done":
+            summary = evt
+
+    return {
+        "fixture_id": summary.get("fixture_id", fixture_id),
+        "balls_simulated": summary.get("balls_simulated", 0),
+        "narratives_written": summary.get("narratives_written", 0),
+        "game_states_written": summary.get("game_states_written", 0),
+        "llm_outputs": last_outputs,
+        "errors": errors,
+    }
+
+
+def _resolve_fixture_id(
+    db: Session,
+    country_id: Optional[int],
+    league_id: Optional[int],
+    fixture_id: Optional[int],
+    country_name: Optional[str],
+    league_code: Optional[str],
+    season_code: Optional[str],
+    localteam_code: Optional[str],
+    visitorteam_code: Optional[str],
+    round: Optional[str],
+) -> int:
+    """Resolve a fixture id from any of the supported lookup modes."""
+    # Name-based lookup
+    if not fixture_id and country_name and league_code and season_code and localteam_code and visitorteam_code:
+        fixture_id = get_fixture_by_names(
+            db, country_name, league_code, season_code, localteam_code, visitorteam_code, round
+        )
+        if not fixture_id:
+            raise HTTPException(status_code=404, detail="No fixture found for the given names")
+
+    # ID-based lookup
+    if not fixture_id and country_id and league_id:
+        fixture_id = get_latest_fixture(db, country_id, league_id)
+        if not fixture_id:
+            raise HTTPException(status_code=404, detail="No fixture found")
+
+    if not fixture_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide (country_name, league_code, season_code, localteam_code, visitorteam_code) or (country_id, league_id)",
+        )
+
+    return fixture_id
 
 
 @router.get("/latest")
@@ -203,22 +288,37 @@ def latest_fixture(
     round: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    # Name-based lookup
-    if not fixture_id and country_name and league_code and season_code and localteam_code and visitorteam_code:
-        fixture_id = get_fixture_by_names(db, country_name, league_code, season_code, localteam_code, visitorteam_code, round)
-        if not fixture_id:
-            raise HTTPException(status_code=404, detail="No fixture found for the given names")
-
-    # ID-based lookup
-    if not fixture_id and country_id and league_id:
-        fixture_id = get_latest_fixture(db, country_id, league_id)
-        if not fixture_id:
-            raise HTTPException(status_code=404, detail="No fixture found")
-
-    if not fixture_id:
-        raise HTTPException(
-            status_code=400,
-            detail="Provide (country_name, league_code, season_code, localteam_code, visitorteam_code) or (country_id, league_id)"
-        )
-
+    fixture_id = _resolve_fixture_id(
+        db, country_id, league_id, fixture_id, country_name, league_code,
+        season_code, localteam_code, visitorteam_code, round,
+    )
     return _run_fixture(fixture_id, db)
+
+
+@router.get("/latest/stream")
+def latest_fixture_stream(
+    country_id: Optional[int] = None,
+    league_id: Optional[int] = None,
+    fixture_id: Optional[int] = None,
+    country_name: Optional[str] = None,
+    league_code: Optional[str] = None,
+    season_code: Optional[str] = None,
+    localteam_code: Optional[str] = None,
+    visitorteam_code: Optional[str] = None,
+    round: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """Streaming variant of /latest. Emits one NDJSON event per 5-ball batch
+    as soon as the LLM finishes producing it, so clients can render stories
+    incrementally instead of waiting for the full innings to complete.
+    """
+    fixture_id = _resolve_fixture_id(
+        db, country_id, league_id, fixture_id, country_name, league_code,
+        season_code, localteam_code, visitorteam_code, round,
+    )
+
+    def event_stream():
+        for evt in _run_fixture_iter(fixture_id, db):
+            yield json.dumps(evt) + "\n"
+
+    return StreamingResponse(event_stream(), media_type="application/x-ndjson")

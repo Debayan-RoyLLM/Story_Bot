@@ -2,6 +2,11 @@
 
 An AI-powered system that generates live cricket match narratives and answers statistical questions in real time using LLM-driven SQL generation. Designed to power live T20 cricket broadcasting by automatically producing relevant match statistics and natural language commentary.
 
+The project ships with two surfaces:
+
+1. **FastAPI backend** — exposes a buffered endpoint and a streaming endpoint that emit one batch of stories every 5 simulated balls.
+2. **Streamlit UI** — a single-page app that consumes the streaming endpoint and renders each story (question + answer) the moment it is produced, instead of waiting for the full innings.
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -20,7 +25,9 @@ An AI-powered system that generates live cricket match narratives and answers st
 - [Cricket Domain Knowledge](#cricket-domain-knowledge)
 - [Configuration](#configuration)
 - [Setup & Installation](#setup--installation)
+- [Running the Application](#running-the-application)
 - [API Usage](#api-usage)
+- [Streamlit UI](#streamlit-ui)
 - [Output Format](#output-format)
 
 ---
@@ -44,33 +51,49 @@ All outputs are logged to a CSV file for downstream use.
 ## Architecture
 
 ```
-┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│  FastAPI     │────▶│  Orchestrator    │────▶│  Question Gen    │
-│  /fixtures   │     │  (every 5 balls) │     │  (OpenAI GPT-4o) │
-└─────────────┘     └──────────────────┘     └──────────────────┘
-                            │                         │
-                            ▼                         ▼
-                    ┌──────────────────┐     ┌──────────────────┐
-                    │  CSV Writer      │     │  ML Filter       │
-                    │  (llm_outputs)   │     │  BERT+PCA+Ensemble│
-                    └──────────────────┘     └──────────────────┘
-                            ▲                         │
-                            │                         ▼
-                    ┌──────────────────┐     ┌──────────────────┐
-                    │  LangGraph       │◀────│  DIN-SQL Planner │
-                    │  Workflow        │     │  (Schema Link +  │
-                    │                  │     │   Decompose)     │
-                    │  write_query ──▶ │     └──────────────────┘
-                    │  execute_query ─▶│
-                    │  generate_answer │
-                    └──────────────────┘
-                            │
-                            ▼
-                    ┌──────────────────┐
-                    │  SQL Server      │
-                    │  (sportmonk DB)  │
-                    └──────────────────┘
+┌──────────────┐     ┌──────────────────────┐     ┌──────────────────┐
+│  Streamlit   │────▶│  FastAPI             │────▶│  Orchestrator    │
+│  UI          │ NDJ │  /fixtures/latest    │     │  (per-ball loop) │
+│              │◀────│  /fixtures/.../stream│     │                  │
+└──────────────┘     └──────────────────────┘     └──────────────────┘
+                                                            │
+                                          (every 5 balls)   │
+                                                            ▼
+                                                  ┌──────────────────┐
+                                                  │  Question Gen    │
+                                                  │  (OpenAI GPT-4o) │
+                                                  └──────────────────┘
+                                                            │
+                                                            ▼
+                                                  ┌──────────────────┐
+                                                  │  ML Filter       │
+                                                  │  BERT+PCA+Ensemble│
+                                                  └──────────────────┘
+                                                            │
+                                                            ▼
+                                                  ┌──────────────────┐
+                                                  │  DIN-SQL Planner │
+                                                  │  (Schema Link +  │
+                                                  │   Decompose)     │
+                                                  └──────────────────┘
+                                                            │
+                                                            ▼
+                                                  ┌──────────────────┐
+                                                  │  LangGraph       │
+                                                  │  write_query ──▶ │
+                                                  │  execute_query ─▶│
+                                                  │  generate_answer │
+                                                  └──────────────────┘
+                                                       │         │
+                                       ┌───────────────┘         │
+                                       ▼                         ▼
+                              ┌──────────────────┐     ┌──────────────────┐
+                              │  CSV Writer      │     │  SQL Server      │
+                              │  llm_outputs_01  │     │  (sportmonk DB)  │
+                              └──────────────────┘     └──────────────────┘
 ```
+
+The streaming endpoint yields one NDJSON event per 5-ball batch as soon as it is produced, so the Streamlit UI can render stories incrementally rather than waiting for the full 120-ball loop to finish.
 
 ---
 
@@ -79,6 +102,8 @@ All outputs are logged to a CSV file for downstream use.
 | Category        | Technology                                    |
 |-----------------|-----------------------------------------------|
 | Web Framework   | FastAPI + Uvicorn                             |
+| Frontend        | Streamlit (live streaming UI)                 |
+| HTTP Client     | requests (NDJSON streaming)                   |
 | Database        | Microsoft SQL Server (ODBC Driver 18)         |
 | ORM             | SQLAlchemy                                    |
 | LLM             | OpenAI GPT-4o-mini                            |
@@ -132,7 +157,8 @@ ai_storyboard/
 │           ├── metadata_helpers.py          # Parse metadata.json into lookup tables
 │           └── sql_checks.py               # Division safety, GROUP BY, WHERE checks
 ├── data/
-│   └── llm_outputs.csv                      # Pipeline output (questions, queries, answers)
+│   └── llm_outputs_01.csv                   # Pipeline output (questions, queries, answers)
+├── streamlit_app.py                         # Streamlit UI (live streaming consumer)
 └── req.txt                                  # Python dependencies
 ```
 
@@ -332,36 +358,71 @@ This script:
 
 Re-run whenever tables/columns are added or the schema changes.
 
-### Run the Server
+---
+
+## Running the Application
+
+The application has two processes — the FastAPI backend (required) and the Streamlit UI (optional, but the recommended way to interact with it). Both should be started from the project root.
+
+### 1. Start the FastAPI backend
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-The API will be available at `http://localhost:8000`.
+The API will be available at `http://localhost:8000` and exposes:
+
+- `GET /fixtures/latest` — buffered: returns the entire response once the 120-ball loop has finished.
+- `GET /fixtures/latest/stream` — streaming: emits one NDJSON line per 5-ball batch as soon as that batch is produced. **This is what the Streamlit UI consumes.**
+
+You can interact with either endpoint directly using the auto-generated Swagger UI at `http://localhost:8000/docs`.
+
+### 2. Start the Streamlit UI (recommended)
+
+In a second terminal, with the backend already running:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+The UI opens at `http://localhost:8501`. Use the sidebar to pick a fixture lookup mode, click **Run pipeline**, and stories will appear below as soon as each 5-ball batch is generated — you do not need to wait for the full innings to complete.
+
+If your backend is on a different host/port, point the UI at it via an environment variable:
+
+```bash
+AI_STORYBOARD_API_URL=http://my-host:9000 streamlit run streamlit_app.py
+```
+
+### How a single run works end-to-end
+
+1. The user chooses a fixture in the Streamlit sidebar (name-based / ID-based / direct fixture id) and clicks **Run pipeline**.
+2. Streamlit issues a streaming `GET` to `/fixtures/latest/stream`.
+3. The backend resolves the fixture id, then loops over all 120 balls of the simulated T20 match.
+4. For each ball, the backend computes the live game state (batsmen, bowler, RR, RRR, wickets in hand, last two balls) and builds a narrative string.
+5. **Every 5 balls**, the backend runs the full LLM pipeline on the current narrative: question generation → ML filter → DIN-SQL planning → SQL generation/validation → execution → sanity check → natural-language answer.
+6. As soon as a batch is ready, the backend (a) appends rows to [data/llm_outputs_01.csv](data/llm_outputs_01.csv) and (b) yields an NDJSON event over the open HTTP connection.
+7. The Streamlit UI parses each line and renders that batch immediately — narrative, then the surviving questions and their natural-language answers — inside an expander.
+8. After ball 120 (or an early end if the chase finishes), a final `done` event is emitted with summary counts and the UI flips its progress indicator to "finished".
 
 ---
 
 ## API Usage
 
-### Get Fixture Stats
+The backend exposes two variants of the same pipeline. Both accept the **same** lookup parameters; only the response style differs.
 
-```
-GET /fixtures/latest
-```
+### Lookup parameters (shared)
 
-The endpoint supports two lookup modes — pick whichever is more convenient:
+Pick one of the three modes below:
 
 **Name-based lookup** (preferred — human-friendly):
 
 ```
-GET /fixtures/latest
-    ?country_name={name}
-    &league_code={code}
-    &season_code={code}
-    &localteam_code={code}
-    &visitorteam_code={code}
-    &round={round}            # optional
+?country_name={name}
+&league_code={code}
+&season_code={code}
+&localteam_code={code}
+&visitorteam_code={code}
+&round={round}            # optional
 ```
 
 All five name/code parameters are required together. Resolves to the matching fixture via `country.name`, `league.code`, `season.code`, and the two team codes; `round` further disambiguates when multiple fixtures match.
@@ -369,37 +430,85 @@ All five name/code parameters are required together. Resolves to the matching fi
 **ID-based lookup** (legacy):
 
 ```
-GET /fixtures/latest?country_id={id}&league_id={id}
+?country_id={id}&league_id={id}
 ```
 
 Retrieves the latest fixture for the given country and league IDs.
 
 **Direct fixture override**: passing `fixture_id={id}` skips lookup entirely and runs that specific fixture.
 
-Once a fixture is resolved, the endpoint:
+### `GET /fixtures/latest` — buffered
 
-1. Iterates through all 120 balls of the T20 match
-2. Every 5 balls, runs the full AI pipeline
-3. Appends results to `data/llm_outputs_01.csv`
-4. Returns the compiled statistics and any per-ball errors
+Runs the full 120-ball loop, then returns a single JSON response containing the final batch of LLM outputs and any per-ball errors. Use this when you want a one-shot result for scripting/CSV export.
 
-**Error handling**:
+```
+GET /fixtures/latest?country_name=India&league_code=IPL&season_code=2024&localteam_code=MI&visitorteam_code=CSK
+```
+
+### `GET /fixtures/latest/stream` — streaming (NDJSON)
+
+Same parameters, but the response is `application/x-ndjson` and the connection stays open until the loop finishes. The backend emits one JSON object per line:
+
+| `type`   | When | Payload fields |
+|----------|------|---------------|
+| `batch`  | Every 5 balls (and once at the end) | `fixture_id`, `ball_no`, `over`, `narrative`, `llm_outputs`, `final?` |
+| `error`  | A ball failed mid-loop | `ball_no`, `error` |
+| `done`   | Final event before the stream closes | `fixture_id`, `balls_simulated`, `narratives_written`, `game_states_written` |
+
+Example (consuming from `requests`):
+
+```python
+import json, requests
+with requests.get(
+    "http://localhost:8000/fixtures/latest/stream",
+    params={"fixture_id": 9998},
+    stream=True,
+) as r:
+    for line in r.iter_lines(decode_unicode=True):
+        if line:
+            print(json.loads(line))
+```
+
+### Error handling (both endpoints)
+
 - `400` if neither a complete name-based set nor `(country_id, league_id)` is provided
 - `404` if no fixture matches the provided lookup
-- Individual ball failures are caught and logged without aborting the match — errors are collected and returned in the response `errors` array.
+- Individual ball failures are caught and logged without aborting the match — for `/latest` they appear in the response `errors` array, for `/latest/stream` they are emitted as `error` events while the stream continues.
+
+---
+
+## Streamlit UI
+
+[streamlit_app.py](streamlit_app.py) is a thin client over `/fixtures/latest/stream`. It is the recommended way to demo or operate the system.
+
+### Features
+
+- **Three lookup modes** in the sidebar (by names / by IDs / by direct fixture id) — same shape as the API parameters.
+- **Live story rendering**: each 5-ball batch appears in its own expander as soon as the backend yields it. Each story shows the question and its natural-language answer.
+- **Progress feedback**: a `st.progress` bar tracks ball number out of 120, and a running counter shows how many stories have been generated so far.
+- **Inline error surfacing**: per-ball failures emitted by the backend show up as warnings without aborting the rest of the run.
+- **Configurable backend**: defaults to `http://localhost:8000`; override via the `AI_STORYBOARD_API_URL` environment variable if your API runs elsewhere.
+
+### Launch
+
+```bash
+streamlit run streamlit_app.py
+```
+
+Then open the URL Streamlit prints (usually `http://localhost:8501`).
 
 ---
 
 ## Output Format
 
-Results are written to `data/llm_outputs.csv` with the following columns:
+Regardless of which endpoint is used, every successful 5-ball batch is appended to [data/llm_outputs_01.csv](data/llm_outputs_01.csv) with the following columns:
 
 | Column | Description |
 |--------|-------------|
 | `fixture_id` | Match identifier |
-| `ball_no` | Ball number (1–120) |
-| `over` | Over in decimal format (0.1–19.6) |
-| `narrative` | Match context narrative |
-| `sentence` | Generated statistical question |
-| `query` | T-SQL query executed |
-| `answer` | Natural language answer |
+| `ball_no` | Ball number (1–120) at which the batch was emitted |
+| `question` | Generated statistical question (post ML filter) |
+| `sql_query` | T-SQL query executed against the database |
+| `answer` | Natural language answer returned by the LLM |
+
+The CSV is the durable record. The Streamlit UI intentionally hides the SQL column and only renders the question and the answer for each story; if you need the underlying queries (for debugging or auditing), open the CSV directly.

@@ -12,3 +12,5 @@ transformers
 torch
 joblib
 numpy
+streamlit
+requests

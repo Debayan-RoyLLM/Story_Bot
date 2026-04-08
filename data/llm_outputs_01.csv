@@ -22,3 +22,125 @@ AND b.team_id = (SELECT visitorteam_id FROM history2.fixtures WHERE id = 2156)",
 ### Conclusions:
 1. **Limited Impact**: Rahane's performance against this particular opponent has been minimal, which could be a factor in match strategies involving his position in the batting order.
 2. **Actionable Observation**: Consider analyzing specific match conditions or historical performance trends to identify improvements or adjustments that could be made in future encounters against this team."
+59147,5,What is Tushar Deshpande's bowling economy rate in this match?,"SELECT CAST(SUM(b.score__runs) AS FLOAT) * 6.0 / NULLIF(COUNT(*), 0) AS economy_rate
+FROM history2.fixtures__balls b
+WHERE b.bowler__fullname = 'Tushar Deshpande'
+AND b.fixture_id = 59147","Tushar Deshpande's bowling economy rate in the current match (fixture_id = 59147) is measured at 7.25 runs per over. 
+
+This performance is slightly above the ideal economy rate of 6-7 runs per over in T20 format, indicating he managed to contain runs relatively well. 
+
+**Conclusions and Observations:**
+
+1. An economy rate of 7.25 suggests that Deshpande has performed adequately, though there is room for improvement to reach the more desirable economy benchmarks in T20 matches.
+
+2. To enhance his impact in future matches, focusing on reducing runs in critical overs, particularly during the death overs, could further improve his effectiveness as a bowler."
+59147,5,How many dot balls have been bowled in this innings by Tushar Deshpande?,"SELECT COUNT(*) AS dot_balls
+FROM history2.fixtures__balls b
+WHERE b.fixture_id = 59147
+  AND b.bowler__fullname = 'Tushar Deshpande'
+  AND b.score__runs = 0;","Tushar Deshpande has bowled 9 dot balls in the current innings, indicating a dot ball percentage of 30% if he bowled 30 balls (typical for T20). This performance reflects effective bowling, contributing to a good economy rate, which is vital in restricting the batting side. 
+
+**Observations:**
+1. His ability to bowl dot balls suggests he is applying pressure on batsmen, potentially leading to wickets or lower run rates.
+2. To further improve, Deshpande could aim for a higher wicket-taking efficiency by focusing on variations to induce more mistakes from batters."
+59147,10,How many total wickets has Mustafizur Rahman taken in the tournament so far?,"SELECT SUM(b.wickets) AS total_wickets
+FROM history2.fixtures__bowling b
+WHERE b.player_id = (SELECT TOP 1 id FROM history2.players WHERE fullname = 'Mustafizur Rahman')
+GROUP BY b.fixture_id","The SQL query result indicates that Mustafizur Rahman has taken multiple wickets across several matches, with data showing individual match wickets. However, the query is structured to return results per fixture rather than a cumulative total. As it stands, the data shows several rows indicating varying performances, which do not aggregate into a single total.
+
+To determine Mustafizur Rahman's total wickets in the tournament, the final SUM() aggregation needs to be applied without the GROUP BY clause. This will provide a single total value, reflecting his overall wicket tally in the tournament.
+
+### Key Performance Indicators:
+- Current structure returns individual match performances.
+- Revising the query will yield a complete count of total wickets taken in the tournament.
+
+### Actionable Observation:
+- Adjust the SQL query to aggregate total wickets correctly for a clearer understanding of Mustafizur Rahman's impact in the tournament.
+- It would be beneficial to track his wickets to evaluate his effectiveness and contribution to team successes in terms of the strike rate and economy in conjunction with wickets taken."
+59147,10,What is the average runs conceded by Mustafizur Rahman in his last five games?,"WITH LastFiveMatches AS (
+    SELECT fixture_id
+    FROM history2.fixtures__balls
+    WHERE bowler__fullname = 'Mustafizur Rahman'
+    ORDER BY ball DESC
+    OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY
+)
+SELECT CAST(SUM(score__runs) AS FLOAT) / NULLIF(COUNT(DISTINCT fixture_id), 0) AS average_runs_conceded
+FROM history2.fixtures__balls
+WHERE fixture_id IN (SELECT fixture_id FROM LastFiveMatches);","The SQL query for calculating the average runs conceded by Mustafizur Rahman has returned an average of 1282.0 runs, which is unrealistic given the expected maximum for runs conceded in five T20 matches (~500 runs, based on a maximum of 100 runs per match). This likely indicates an aggregation error in the query, specifically that it has not properly grouped or filtered the results by individual matches.
+
+To correctly assess Mustafizur Rahman's performance, it would be important to:
+
+1. Implement a `GROUP BY` clause for the `fixture_id` to ensure that the runs conceded are correctly totaled per match before averaging.
+2. Ensure that the runs data is not being counted cumulatively without proper distinction between matches.
+
+**Conclusion:** The reported figure does not accurately reflect Mustafizur Rahman's average runs conceded in his last five games. Correcting the SQL query structure is essential for obtaining valid performance insights."
+59147,5,How many dot balls has Tushar Deshpande bowled in this match so far?,"SELECT COUNT(*) AS dot_balls
+FROM history2.fixtures__balls b
+WHERE b.fixture_id = 59147 
+AND b.bowler__fullname = 'Tushar Deshpande' 
+AND b.score__runs = 0;","Tushar Deshpande has bowled 9 dot balls in the current match. 
+
+### Key Performance Insight:
+- **Dot Ball Percentage:** Considering that T20 matches typically see around 30-40% of balls being dot balls, Deshpande's performance here indicates effective bowling if his overall deliveries are consistent with or below this average.
+
+### Actionable Observations:
+1. **Maintaining Pressure:** Consistently bowling dot balls is crucial for maintaining pressure on the batting side, potentially leading to wicket-taking opportunities.
+2. **Follow-Up Strategy:** It may benefit him to continue focusing on line and length to increase the dot ball count, which could disrupt the batsmen’s rhythm further."
+59147,10,What is the strike rate of Ishan Kishan in his last 10 innings?,"WITH Last10Innings AS (
+    SELECT
+        b.fixture_id,
+        SUM(b.score__runs) AS total_runs,
+        COUNT(*) AS balls_faced
+    FROM history2.fixtures__balls b
+    WHERE b.batsman__fullname = 'Ishan Kishan'
+    GROUP BY b.fixture_id
+),
+RankedInnings AS (
+    SELECT *,
+           ROW_NUMBER() OVER (ORDER BY fixture_id DESC) AS rn
+    FROM Last10Innings
+)
+SELECT 
+    CAST(SUM(total_runs) AS FLOAT) / NULLIF(SUM(balls_faced), 0) * 100 AS strike_rate
+FROM RankedInnings
+WHERE rn <= 10;","Ishan Kishan's strike rate in his last 10 innings is approximately 143.71. This indicates an aggressive batting style, as a strike rate above 150 typically signifies an explosive approach, while a strike rate around 140 still reflects a strong ability to score quickly.
+
+**Key Performance Indicators:**
+- **Strike Rate**: 143.71 (Aggressive)
+  
+**Observations:**
+1. Maintaining a strike rate above the par level (100) shows his capability to contribute effectively to the team's scoring rate.
+2. To further enhance his impact, targeting a strike rate exceeding 150 in future innings may increase his effectiveness, especially in high-pressure scenarios. 
+
+Overall, Kishan's performance displays solid attacking intent, critical for T20 success."
+59147,10,How many dot balls has Mustafizur Rahman bowled in this match?,"SELECT COUNT(*) AS dot_balls
+FROM history2.fixtures__balls b
+WHERE b.bowler__fullname = 'Mustafizur Rahman' 
+AND b.score__runs = 0 
+AND b.fixture_id = 59147;","Mustafizur Rahman has bowled 5 dot balls in this match, indicating an effective contribution to restricting runs and applying pressure on the batting side. 
+
+Key Performance Insights:
+- **Dot Ball Percentage:** This translates to a higher dot ball percentage, which is indicative of good bowling performance in T20 cricket where keeping the dot ball count above 40% is considered effective. If his overall deliveries are taken into account, this performance metric could suggest he is successfully containing the batting side.
+
+Actionable Observations:
+1. Continuously targeting the dot ball can further impact the overall run rate of the opposing team, especially in the middle and death overs.
+2. It may be beneficial to assess how this performance aligns with the bowler's overall economy and wicket-taking ability in recent matches to strategize on future bowling changes during critical phases."
+59147,10,How many wickets has Mustafizur Rahman taken in his last 10 matches?,"WITH LastMatches AS (
+    SELECT TOP 10 id
+    FROM history2.fixtures
+    ORDER BY starting_at DESC
+)
+SELECT SUM(b.wickets) AS total_wickets
+FROM history2.fixtures__bowling b
+WHERE b.player_id = (SELECT id FROM history2.players WHERE fullname = 'Mustafizur Rahman')
+AND b.fixture_id IN (SELECT id FROM LastMatches)","The SQL result indicates that there is no recorded data for the number of wickets taken by Mustafizur Rahman in his last 10 matches. This can imply one of two scenarios: either he has not participated in the last 10 matches, or there is an error in the data submission for those matches.
+
+### Key Performance Indicators:
+- **Wickets Taken**: 0 (as per the SQL output, though realistically he may have taken wickets not included in this dataset).
+  
+### Observations:
+1. **Inactivity Risk**: If indeed Mustafizur has not participated in the last matches, it may signal potential issues regarding fitness or availability.
+2. **Impact on Team Performance**: A key bowler being absent can affect the team’s bowling strategy and overall effectiveness, especially in T20 formats where wickets are crucial for restricting run rates.
+
+### Conclusion:
+To gain further insights, it’s recommended to investigate his participation status in these matches or look into a broader dataset covering more matches to assess his recent form adequately."
