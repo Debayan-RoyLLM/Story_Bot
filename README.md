@@ -344,20 +344,49 @@ The API will be available at `http://localhost:8000`.
 
 ## API Usage
 
-### Get Latest Fixture Stats
+### Get Fixture Stats
+
+```
+GET /fixtures/latest
+```
+
+The endpoint supports two lookup modes — pick whichever is more convenient:
+
+**Name-based lookup** (preferred — human-friendly):
+
+```
+GET /fixtures/latest
+    ?country_name={name}
+    &league_code={code}
+    &season_code={code}
+    &localteam_code={code}
+    &visitorteam_code={code}
+    &round={round}            # optional
+```
+
+All five name/code parameters are required together. Resolves to the matching fixture via `country.name`, `league.code`, `season.code`, and the two team codes; `round` further disambiguates when multiple fixtures match.
+
+**ID-based lookup** (legacy):
 
 ```
 GET /fixtures/latest?country_id={id}&league_id={id}
 ```
 
-This endpoint:
-1. Retrieves the latest fixture for the given country and league
-2. Iterates through all 120 balls of the T20 match
-3. Every 5 balls, runs the full AI pipeline
-4. Writes results to `data/llm_outputs.csv`
-5. Returns the compiled statistics and any per-ball errors
+Retrieves the latest fixture for the given country and league IDs.
 
-**Error handling**: Returns `404` if no fixture is found. Individual ball failures are caught and logged without aborting the match — errors are collected and returned in the response `errors` array.
+**Direct fixture override**: passing `fixture_id={id}` skips lookup entirely and runs that specific fixture.
+
+Once a fixture is resolved, the endpoint:
+
+1. Iterates through all 120 balls of the T20 match
+2. Every 5 balls, runs the full AI pipeline
+3. Appends results to `data/llm_outputs_01.csv`
+4. Returns the compiled statistics and any per-ball errors
+
+**Error handling**:
+- `400` if neither a complete name-based set nor `(country_id, league_id)` is provided
+- `404` if no fixture matches the provided lookup
+- Individual ball failures are caught and logged without aborting the match — errors are collected and returned in the response `errors` array.
 
 ---
 
